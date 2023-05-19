@@ -21,13 +21,36 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from PIL import Image
 
+import wandb
+
 torch.backends.cudnn.deterministic = True
 
 
 if __name__ == '__main__':
+    ##########################
+    # SETTINGS
+    ##########################
+
+    # Hyperparameters
+    learning_rate = 0.0005
+    num_epochs = 2
+    wandb.init(
+    # set the wandb project where this run will be logged
+        project="aging-ramon",
+        
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": learning_rate,
+            "architecture": "coral",
+            "dataset": "afad",
+            "epochs": num_epochs,
+            }
+    )
+    
     NUM_CLASSES = 26
     BATCH_SIZE = 256
     GRAYSCALE = False
+    
 
 
 def task_importance_weights(label_array):
@@ -231,20 +254,20 @@ def compute_mae_and_mse(model, data_loader, device):
 
 if __name__ == '__main__':
     print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = '../datasets/afad_train_sample.csv'
-    VALID_CSV_PATH = '../datasets/afad_valid_sample.csv'
-    TEST_CSV_PATH = '../datasets/afad_test_sample.csv'
-    IMAGE_PATH = 'shared_datasets/AFAD/orig/tarball/AFAD-Full/'
-
-
-    # Argparse helper
+    TRAIN_CSV_PATH = '../datasets/afad_train.csv'
+    VALID_CSV_PATH = '../datasets/afad_valid.csv'
+    TEST_CSV_PATH = '../datasets/afad_test.csv'
+    IMAGE_PATH = '../../../shared_datasets/AFAD/orig/tarball/AFAD-Full/'
 
 
 
 
 
 
-    ############################
+
+
+
+    
     NUM_WORKERS = 4
     CUDA = 0
     SEED = 1
@@ -289,13 +312,7 @@ if __name__ == '__main__':
             f.flush()
 
 
-    ##########################
-    # SETTINGS
-    ##########################
 
-    # Hyperparameters
-    learning_rate = 0.0005
-    num_epochs = 200
 
     # Architecture
     
@@ -395,6 +412,8 @@ if __name__ == '__main__':
             optimizer.step()
 
             # LOGGING
+            model.eval()
+
             if not batch_idx % 50:
                 s = ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
                     % (epoch+1, num_epochs, batch_idx,
@@ -403,11 +422,23 @@ if __name__ == '__main__':
                 with open(LOGFILE, 'a') as f:
                     f.write('%s\n' % s)
 
+        # Wandb evaluation
         model.eval()
         with torch.set_grad_enabled(False):
-            valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+            train_mae, train_mse = compute_mae_and_mse(model, train_loader,
+                                                device=DEVICE)
+            test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                     device=DEVICE)
-
+            wandb.log({'epoch':epoch, 
+                       'train_mae':train_mae, 'train_mse':train_mse,
+                       'test_mae':test_mae, 'test_mse':test_mse})
+            
+        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
+                                                device=DEVICE)
+        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
+                                                device=DEVICE)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
         if valid_mae < best_mae:
             best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
             ########## SAVE MODEL #############
@@ -488,4 +519,5 @@ if __name__ == '__main__':
     with open(TEST_PREDICTIONS, 'w') as f:
         all_pred = ','.join(all_pred)
         f.write(all_pred)
+    wandb.finish()
 
