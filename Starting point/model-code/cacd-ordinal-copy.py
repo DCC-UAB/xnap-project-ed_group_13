@@ -36,7 +36,7 @@ if __name__ == '__main__':
     num_epochs = 2
     wandb.init(
     # set the wandb project where this run will be logged
-        project="proba",
+        project="proba-1",
         
         # track hyperparameters and run metadata
         config={
@@ -250,10 +250,10 @@ def compute_mae_and_mse(model, data_loader, device):
 
 if __name__ == '__main__':
     print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/cacd_train.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/cacd_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/cacd_test.csv'
-    IMAGE_PATH = 'D:/DL/treball/CACD2000/CACD2000/'
+    TRAIN_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_train.csv'
+    VALID_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_valid.csv'
+    TEST_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_test.csv'
+    IMAGE_PATH = '/home/alumne/Desktop/Datasets/CACD2000/'
 
 
 
@@ -265,7 +265,7 @@ if __name__ == '__main__':
 
     
     NUM_WORKERS = 4
-    CUDA = -1
+    CUDA = 0
     SEED = 1
     IMP_WEIGHT = 0
     OUTPATH = 'afad-model1'

@@ -8,4 +8,3 @@ test.sample(n=256,axis=0,random_state = 420).to_csv('afad_test_sample.csv')
 
 valid = pd.read_csv('afad_valid.csv')
 valid.sample(n=256,axis=0,random_state = 420).to_csv('afad_valid_sample.csv')
-

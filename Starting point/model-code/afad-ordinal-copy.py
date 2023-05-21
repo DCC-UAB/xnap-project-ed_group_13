@@ -33,10 +33,10 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 2
+    num_epochs = 50
     wandb.init(
     # set the wandb project where this run will be logged
-        project="proba",
+        project="afad-ordinal",
         
         # track hyperparameters and run metadata
         config={
@@ -250,10 +250,10 @@ def compute_mae_and_mse(model, data_loader, device):
 
 if __name__ == '__main__':
     print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/afad_train.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/afad_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/Starting point/datasets/afad_test.csv'
-    IMAGE_PATH = 'D:/DL/treball/AFAD-Full/'
+    TRAIN_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/afad_train.csv'
+    VALID_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/afad_valid.csv'
+    TEST_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/afad_test.csv'
+    IMAGE_PATH = '/home/alumne/Desktop/Datasets/AFAD-Full'
 
 
 
@@ -265,10 +265,10 @@ if __name__ == '__main__':
 
     
     NUM_WORKERS = 4
-    CUDA = -1
+    CUDA = 0
     SEED = 1
     IMP_WEIGHT = 0
-    OUTPATH = 'afad-model1'
+    OUTPATH = 'afad-ordinal'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
@@ -288,6 +288,7 @@ if __name__ == '__main__':
     LOGFILE = os.path.join(PATH, 'training.log')
     TEST_PREDICTIONS = os.path.join(PATH, 'test_predictions.log')
     TEST_ALLPROBAS = os.path.join(PATH, 'test_allprobas.tensor')
+    COSTES = os.path.join(PATH, 'costs.log')
 
     # Logging
 
@@ -387,6 +388,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     best_mae, best_rmse, best_epoch = 999, 999, -1
+    costs=[]
     for epoch in range(num_epochs):
 
         model.train()
@@ -415,6 +417,8 @@ if __name__ == '__main__':
                     % (epoch+1, num_epochs, batch_idx,
                         len(train_dataset)//BATCH_SIZE, cost))
                 print(s)
+                wandb.log({"cost":cost.item()})
+                costs.append(str(cost.item()))     
                 with open(LOGFILE, 'a') as f:
                     f.write('%s\n' % s)
 
@@ -515,5 +519,10 @@ if __name__ == '__main__':
     with open(TEST_PREDICTIONS, 'w') as f:
         all_pred = ','.join(all_pred)
         f.write(all_pred)
+
+    with open(COSTES, 'w') as f:
+        costs = ','.join(costs)
+        f.write(costs)
+        
     wandb.finish()
 
