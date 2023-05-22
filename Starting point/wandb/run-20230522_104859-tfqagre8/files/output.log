@@ -1,0 +1,13 @@
+PyTorch Version: 2.0.1+cpu
+CUDA device available: False
+Using CUDA device: cuda:0
+Random Seed: 1
+Task Importance Weight: 0
+Output Path: cacd-ordinal
+Script: c:/Users/sergi/Documents/GitHub/xnap-project-ed_group_13/Starting point/model-code/cacd-ce copy.py
+Traceback (most recent call last):
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\cacd-ce copy.py", line 333, in <module>
+    imp = imp.to(DEVICE)
+  File "C:\Users\sergi\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0\LocalCache\local-packages\Python39\site-packages\torch\cuda\__init__.py", line 239, in _lazy_init
+    raise AssertionError("Torch not compiled with CUDA enabled")
+AssertionError: Torch not compiled with CUDA enabled
