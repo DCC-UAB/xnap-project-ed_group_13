@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 2
+    num_epochs = 40
     wandb.init(
     # set the wandb project where this run will be logged
         project="cacd-ordinal",
