@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 313, in <module>
+    logits, probas = model(features)
+ValueError: too many values to unpack (expected 2)

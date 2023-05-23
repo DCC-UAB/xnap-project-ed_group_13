@@ -1,0 +1,32 @@
+PyTorch Version: 2.0.0
+CUDA device available: True
+Using CUDA device: cuda:0
+Random Seed: 1
+Task Importance Weight: 0
+Output Path: afad-model1
+Script: /home/alumne/Desktop/TREBALL/Starting point/model-code/cacd-ordinal-copy.py
+Epoch: 001/002 | Batch 0000/0448 | Cost: 37.1482
+Epoch: 001/002 | Batch 0050/0448 | Cost: 20.5378
+Epoch: 001/002 | Batch 0100/0448 | Cost: 20.2465
+Epoch: 001/002 | Batch 0150/0448 | Cost: 21.1244
+Epoch: 001/002 | Batch 0200/0448 | Cost: 20.9968
+Epoch: 001/002 | Batch 0250/0448 | Cost: 21.8866
+Epoch: 001/002 | Batch 0300/0448 | Cost: 21.4009
+Epoch: 001/002 | Batch 0350/0448 | Cost: 20.8382
+Epoch: 001/002 | Batch 0400/0448 | Cost: 20.5080
+MAE/RMSE: | Current Valid: 9.28/11.10 Ep. 0 | Best Valid : 9.28/11.10 Ep. 0
+Time elapsed: 9.44 min
+Epoch: 002/002 | Batch 0000/0448 | Cost: 27.0799
+Epoch: 002/002 | Batch 0050/0448 | Cost: 19.8485
+Epoch: 002/002 | Batch 0100/0448 | Cost: 19.6532
+Epoch: 002/002 | Batch 0150/0448 | Cost: 18.9867
+Epoch: 002/002 | Batch 0200/0448 | Cost: 19.8352
+Epoch: 002/002 | Batch 0250/0448 | Cost: 19.6048
+Epoch: 002/002 | Batch 0300/0448 | Cost: 19.7868
+Epoch: 002/002 | Batch 0350/0448 | Cost: 18.8160
+Epoch: 002/002 | Batch 0400/0448 | Cost: 19.3617
+MAE/RMSE: | Current Valid: 8.54/10.55 Ep. 1 | Best Valid : 8.54/10.55 Ep. 1
+Time elapsed: 17.25 min
+MAE/RMSE: | Train: 8.51/10.53 | Valid: 8.54/10.55 | Test: 8.44/10.46
+Total Training Time: 18.99 min
+MAE/RMSE: | Best Train: 8.50/10.52 | Best Valid: 8.54/10.55 | Best Test: 8.44/10.46
