@@ -408,6 +408,7 @@ if __name__ == '__main__':
             targets = targets.to(DEVICE)
 
             # FORWARD AND BACK PROP
+
             logits, probas = model(features)
             cost = F.cross_entropy(logits, targets)
             optimizer.zero_grad()
