@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 353, in <module>
+    model = resnet34(NUM_CLASSES, GRAYSCALE)
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 329, in resnet34
+    pretrained_dict = {k: v for k, v in pesos_nous.items() if k in model.state_dict}
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 329, in <dictcomp>
+    pretrained_dict = {k: v for k, v in pesos_nous.items() if k in model.state_dict}
+TypeError: argument of type 'method' is not iterable

@@ -1,0 +1,12 @@
+
+Epoch: 001/040 | Batch 0000/0448 | Cost: 35.5924
+Epoch: 001/040 | Batch 0050/0448 | Cost: 33.4122
+Epoch: 001/040 | Batch 0100/0448 | Cost: 32.7059
+Epoch: 001/040 | Batch 0150/0448 | Cost: 32.2482
+Epoch: 001/040 | Batch 0200/0448 | Cost: 32.1804
+Epoch: 001/040 | Batch 0250/0448 | Cost: 32.5935
+Epoch: 001/040 | Batch 0300/0448 | Cost: 32.5463
+Traceback (most recent call last):
+  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 405, in <module>
+    features = features.to(DEVICE)
+KeyboardInterrupt

@@ -18,9 +18,8 @@ import sys
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-
+import torchvision.models
 from torchvision import transforms
-from torchvision.models import resnet50
 from PIL import Image
 
 import wandb
@@ -35,10 +34,10 @@ if __name__ == '__main__':
     # Argparse helper
 
     NUM_WORKERS = 4
-    CUDA = -1
+    CUDA = 0
     SEED = 1
     IMP_WEIGHT = 0
-    OUTPATH = 'transfer'
+    OUTPATH = 'cacd-ordinal'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
@@ -53,8 +52,6 @@ if __name__ == '__main__':
     IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
-
-    
     if not os.path.exists(PATH):
         os.mkdir(PATH)
     LOGFILE = os.path.join(PATH, 'training.log')
@@ -87,11 +84,11 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 50
+    num_epochs = 40
 
     wandb.init(
     # set the wandb project where this run will be logged
-        project="aging-ramon",
+        project="transfer-coral",
         
         # track hyperparameters and run metadata
         config={
@@ -217,22 +214,140 @@ if __name__ == '__main__':
 # MODEL
 ##########################
 
+
+def conv3x3(in_planes, out_planes, stride=1):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+
+class ResNet(nn.Module):
+
+    def __init__(self, block, layers, num_classes, grayscale):
+        self.num_classes = num_classes
+        self.inplanes = 64
+        if grayscale:
+            in_dim = 1
+        else:
+            in_dim = 3
+        super(ResNet, self).__init__()
+        self.conv1 = nn.Conv2d(in_dim, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.avgpool = nn.AvgPool2d(4)
+        self.fc = nn.Linear(512, 1, bias=False)
+        self.linear_1_bias = nn.Parameter(torch.zeros(self.num_classes-1).float())
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, (2. / n)**.5)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
+
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        logits = self.fc(x)
+        logits = logits + self.linear_1_bias
+        probas = torch.sigmoid(logits)
+        return logits, probas
+
+
 def resnet34(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
-    model = resnet50(weights = "IMAGENET1K_V2")
-    model.fc = nn.Linear(2048, num_classes)
+    model = ResNet(block=BasicBlock,
+                   layers=[3, 4, 6, 3],
+                   num_classes=num_classes,
+                   grayscale=grayscale)
+    
+    pesos_nous = torchvision.models.resnet34(weights='IMAGENET1K_V1').state_dict()
+    pesos_actuals = model.state_dict()
+    pretrained_dict = {}
+
+    pretrained_dict = {k: v for k, v in pesos_nous.items() if k in pesos_actuals}
+    pretrained_dict["fc.weight"] = pesos_actuals["fc.weight"]
+    pesos_actuals.update(pretrained_dict)
+    model.load_state_dict(pesos_actuals)
     return model
 
 
 ###########################################
 # Initialize Cost, Model, and Optimizer
 ###########################################
+
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
 
-        
+
 def cost_fn(logits, levels, imp):
     val = (-torch.sum((F.logsigmoid(logits)*levels
                       + (F.logsigmoid(logits) - logits)*(1-levels))*imp,
@@ -243,18 +358,21 @@ if __name__ == '__main__':
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
     model = resnet34(NUM_CLASSES, GRAYSCALE)
-    set_parameter_requires_grad(model, True)
-
+    set_parameter_requires_grad(model, False)
     model.fc.weight.requires_grad = True
-    model.fc.bias.requires_grad = True
+    #model.fc.bias.requires_grad = True
+    #model.linear_1_bias.weight.requires_grad = True
+    #model.linear_1_bias.bias.requires_grad = True
     model.to(DEVICE)
     params_to_update = []
     for name,param in model.named_parameters():
         if param.requires_grad == True:
             params_to_update.append(param)
+
     optimizer = torch.optim.Adam(params_to_update, lr=learning_rate) 
 
-
+    model.to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
 
 
 def compute_mae_and_mse(model, data_loader, device):
@@ -263,9 +381,8 @@ def compute_mae_and_mse(model, data_loader, device):
 
         features = features.to(device)
         targets = targets.to(device)
-        logits = model(features)
-        probas = torch.softmax(logits, dim=1)
-        #logits, probas = model(features)
+
+        logits, probas = model(features)
         predict_levels = probas > 0.5
         predicted_labels = torch.sum(predict_levels, dim=1)
         num_examples += targets.size(0)
@@ -276,8 +393,6 @@ def compute_mae_and_mse(model, data_loader, device):
     return mae, mse
 
 if __name__ == '__main__':
-    NUM_CLASSES = 49
-
     start_time = time.time()
 
     best_mae, best_rmse, best_epoch = 999, 999, -1
@@ -293,10 +408,7 @@ if __name__ == '__main__':
             levels = levels.to(DEVICE) 
 
             # FORWARD AND BACK PROP
-            logits = model(features)
-            probas = torch.softmax(logits, dim=1)
-
-            #logits, probas = model(features)
+            logits, probas = model(features)
             cost = cost_fn(logits, levels, imp)
             optimizer.zero_grad()
 
@@ -400,9 +512,7 @@ if __name__ == '__main__':
         for batch_idx, (features, targets, levels) in enumerate(test_loader):
             
             features = features.to(DEVICE)
-            logits = model(features)
-            probas = torch.softmax(logits, dim=1)
-            #logits, probas = model(features)
+            logits, probas = model(features)
             all_probas.append(probas)
             predict_levels = probas > 0.5
             predicted_labels = torch.sum(predict_levels, dim=1)

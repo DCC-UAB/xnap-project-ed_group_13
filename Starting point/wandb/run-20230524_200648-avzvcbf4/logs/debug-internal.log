@@ -1,0 +1,176 @@
+2023-05-24 20:06:48,669 INFO    StreamThr :20512 [internal.py:wandb_internal():86] W&B internal server running at pid: 20512, started at: 2023-05-24 20:06:48.668941
+2023-05-24 20:06:48,670 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: status
+2023-05-24 20:06:48,672 INFO    WriterThread:20512 [datastore.py:open_for_write():85] open: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\run-avzvcbf4.wandb
+2023-05-24 20:06:48,674 DEBUG   SenderThread:20512 [sender.py:send():375] send: header
+2023-05-24 20:06:48,713 DEBUG   SenderThread:20512 [sender.py:send():375] send: run
+2023-05-24 20:06:49,122 INFO    SenderThread:20512 [dir_watcher.py:__init__():219] watching files in: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files
+2023-05-24 20:06:49,122 INFO    SenderThread:20512 [sender.py:_start_run_threads():1124] run started: avzvcbf4 with start time 1684951608.669914
+2023-05-24 20:06:49,122 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: summary_record
+2023-05-24 20:06:49,123 INFO    SenderThread:20512 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-05-24 20:06:49,125 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: check_version
+2023-05-24 20:06:49,125 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: check_version
+2023-05-24 20:06:49,227 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: run_start
+2023-05-24 20:06:49,243 DEBUG   HandlerThread:20512 [system_info.py:__init__():31] System info init
+2023-05-24 20:06:49,243 DEBUG   HandlerThread:20512 [system_info.py:__init__():46] System info init done
+2023-05-24 20:06:49,244 INFO    HandlerThread:20512 [system_monitor.py:start():181] Starting system monitor
+2023-05-24 20:06:49,244 INFO    SystemMonitor:20512 [system_monitor.py:_start():145] Starting system asset monitoring threads
+2023-05-24 20:06:49,244 INFO    HandlerThread:20512 [system_monitor.py:probe():201] Collecting system info
+2023-05-24 20:06:49,247 INFO    SystemMonitor:20512 [interfaces.py:start():190] Started cpu monitoring
+2023-05-24 20:06:49,248 INFO    SystemMonitor:20512 [interfaces.py:start():190] Started disk monitoring
+2023-05-24 20:06:49,248 INFO    SystemMonitor:20512 [interfaces.py:start():190] Started gpu monitoring
+2023-05-24 20:06:49,254 INFO    SystemMonitor:20512 [interfaces.py:start():190] Started memory monitoring
+2023-05-24 20:06:49,262 INFO    SystemMonitor:20512 [interfaces.py:start():190] Started network monitoring
+2023-05-24 20:06:49,269 DEBUG   HandlerThread:20512 [system_info.py:probe():195] Probing system
+2023-05-24 20:06:49,270 DEBUG   HandlerThread:20512 [system_info.py:_probe_git():180] Probing git
+2023-05-24 20:06:49,347 DEBUG   HandlerThread:20512 [system_info.py:_probe_git():188] Probing git done
+2023-05-24 20:06:49,347 DEBUG   HandlerThread:20512 [system_info.py:probe():240] Probing system done
+2023-05-24 20:06:49,347 DEBUG   HandlerThread:20512 [system_monitor.py:probe():210] {'os': 'Windows-10-10.0.19045-SP0', 'python': '3.9.13', 'heartbeatAt': '2023-05-24T18:06:49.269886', 'startedAt': '2023-05-24T18:06:48.659941', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': 'c:\\Users\\sergi\\Documents\\GitHub\\xnap-project-ed_group_13\\Starting point\\model-code\\Transfer-coral-cacd.py', 'codePath': 'Starting point\\model-code\\Transfer-coral-cacd.py', 'git': {'remote': 'https://github.com/DCC-UAB/xnap-project-ed_group_13.git', 'commit': '20da59f6800e1771fafda59e5828a0ff0e57698a'}, 'email': 'gioserby@gmail.com', 'root': 'C:/Users/sergi/Documents/GitHub/xnap-project-ed_group_13', 'host': 'DESKTOP-MNFHNID', 'username': 'sergi', 'executable': 'C:\\Users\\sergi\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0\\python.exe', 'cpu_count': 6, 'cpu_count_logical': 12, 'cpu_freq': {'current': 3696.0, 'min': 0.0, 'max': 3696.0}, 'cpu_freq_per_core': [{'current': 3696.0, 'min': 0.0, 'max': 3696.0}], 'disk': {'total': 464.6364326477051, 'used': 410.89964294433594}, 'gpu': 'NVIDIA GeForce GTX 1660 SUPER', 'gpu_count': 1, 'gpu_devices': [{'name': 'NVIDIA GeForce GTX 1660 SUPER', 'memory_total': 6442450944}], 'memory': {'total': 15.926158905029297}}
+2023-05-24 20:06:49,347 INFO    HandlerThread:20512 [system_monitor.py:probe():211] Finished collecting system info
+2023-05-24 20:06:49,347 INFO    HandlerThread:20512 [system_monitor.py:probe():214] Publishing system info
+2023-05-24 20:06:49,347 DEBUG   HandlerThread:20512 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2023-05-24 20:06:49,348 DEBUG   HandlerThread:20512 [system_info.py:_save_pip():67] Saving pip packages done
+2023-05-24 20:06:49,348 INFO    HandlerThread:20512 [system_monitor.py:probe():216] Finished publishing system info
+2023-05-24 20:06:49,353 DEBUG   SenderThread:20512 [sender.py:send():375] send: files
+2023-05-24 20:06:49,353 INFO    SenderThread:20512 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2023-05-24 20:06:49,362 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: stop_status
+2023-05-24 20:06:49,363 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: stop_status
+2023-05-24 20:06:49,562 DEBUG   SenderThread:20512 [sender.py:send():375] send: telemetry
+2023-05-24 20:06:49,822 INFO    wandb-upload_0:20512 [upload_job.py:push():137] Uploaded file C:\Users\sergi\AppData\Local\Temp\tmpdwgmtzi8wandb\fzu3v4ti-wandb-metadata.json
+2023-05-24 20:06:50,137 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_created():278] file/dir created: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-summary.json
+2023-05-24 20:06:50,137 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_created():278] file/dir created: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\requirements.txt
+2023-05-24 20:06:50,137 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_created():278] file/dir created: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-metadata.json
+2023-05-24 20:06:50,137 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_created():278] file/dir created: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\output.log
+2023-05-24 20:06:52,149 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_modified():295] file/dir modified: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\output.log
+2023-05-24 20:06:54,199 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: status_report
+2023-05-24 20:06:59,227 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: status_report
+2023-05-24 20:07:03,071 DEBUG   SenderThread:20512 [sender.py:send():375] send: exit
+2023-05-24 20:07:03,071 INFO    SenderThread:20512 [sender.py:send_exit():598] handling exit code: 1
+2023-05-24 20:07:03,071 INFO    SenderThread:20512 [sender.py:send_exit():600] handling runtime: 13
+2023-05-24 20:07:03,073 INFO    SenderThread:20512 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-05-24 20:07:03,074 INFO    SenderThread:20512 [sender.py:send_exit():606] send defer
+2023-05-24 20:07:03,074 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,074 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 0
+2023-05-24 20:07:03,074 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,075 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 0
+2023-05-24 20:07:03,075 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 1
+2023-05-24 20:07:03,075 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,075 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 1
+2023-05-24 20:07:03,076 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,076 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 1
+2023-05-24 20:07:03,076 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 2
+2023-05-24 20:07:03,076 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,076 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 2
+2023-05-24 20:07:03,076 INFO    HandlerThread:20512 [system_monitor.py:finish():190] Stopping system monitor
+2023-05-24 20:07:03,077 DEBUG   SystemMonitor:20512 [system_monitor.py:_start():159] Starting system metrics aggregation loop
+2023-05-24 20:07:03,077 INFO    HandlerThread:20512 [interfaces.py:finish():202] Joined cpu monitor
+2023-05-24 20:07:03,086 DEBUG   SystemMonitor:20512 [system_monitor.py:_start():166] Finished system metrics aggregation loop
+2023-05-24 20:07:03,086 INFO    HandlerThread:20512 [interfaces.py:finish():202] Joined disk monitor
+2023-05-24 20:07:03,086 DEBUG   SystemMonitor:20512 [system_monitor.py:_start():170] Publishing last batch of metrics
+2023-05-24 20:07:03,135 INFO    HandlerThread:20512 [interfaces.py:finish():202] Joined gpu monitor
+2023-05-24 20:07:03,135 INFO    HandlerThread:20512 [interfaces.py:finish():202] Joined memory monitor
+2023-05-24 20:07:03,136 INFO    HandlerThread:20512 [interfaces.py:finish():202] Joined network monitor
+2023-05-24 20:07:03,136 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,136 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 2
+2023-05-24 20:07:03,136 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 3
+2023-05-24 20:07:03,136 DEBUG   SenderThread:20512 [sender.py:send():375] send: stats
+2023-05-24 20:07:03,136 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,137 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 3
+2023-05-24 20:07:03,137 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,137 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 3
+2023-05-24 20:07:03,137 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 4
+2023-05-24 20:07:03,137 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,137 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 4
+2023-05-24 20:07:03,137 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,137 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 4
+2023-05-24 20:07:03,137 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 5
+2023-05-24 20:07:03,138 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,138 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 5
+2023-05-24 20:07:03,138 DEBUG   SenderThread:20512 [sender.py:send():375] send: summary
+2023-05-24 20:07:03,138 INFO    SenderThread:20512 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-05-24 20:07:03,139 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,139 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 5
+2023-05-24 20:07:03,139 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 6
+2023-05-24 20:07:03,139 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,139 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 6
+2023-05-24 20:07:03,140 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,140 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 6
+2023-05-24 20:07:03,145 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: status_report
+2023-05-24 20:07:03,211 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_modified():295] file/dir modified: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-summary.json
+2023-05-24 20:07:03,454 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 7
+2023-05-24 20:07:03,454 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:03,454 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 7
+2023-05-24 20:07:03,455 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:03,455 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 7
+2023-05-24 20:07:04,099 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: poll_exit
+2023-05-24 20:07:04,226 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_modified():295] file/dir modified: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\config.yaml
+2023-05-24 20:07:05,077 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 8
+2023-05-24 20:07:05,077 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: poll_exit
+2023-05-24 20:07:05,077 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:05,077 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 8
+2023-05-24 20:07:05,078 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:05,078 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 8
+2023-05-24 20:07:05,091 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 9
+2023-05-24 20:07:05,091 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:05,091 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 9
+2023-05-24 20:07:05,091 DEBUG   SenderThread:20512 [sender.py:send():375] send: artifact
+2023-05-24 20:07:05,106 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: poll_exit
+2023-05-24 20:07:05,231 INFO    Thread-16 :20512 [dir_watcher.py:_on_file_modified():295] file/dir modified: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\output.log
+2023-05-24 20:07:05,942 INFO    SenderThread:20512 [sender.py:send_artifact():1474] sent artifact job-https___github.com_DCC-UAB_xnap-project-ed_group_13.git_Starting_point_model-code_Transfer-coral-cacd.py - {'id': 'QXJ0aWZhY3Q6NDY1NDQ4ODY4', 'digest': '99a1462f09d221f48ee07e088ffb0047', 'state': 'COMMITTED', 'aliases': [{'artifactCollectionName': 'job-https___github.com_DCC-UAB_xnap-project-ed_group_13.git_Starting_point_model-code_Transfer-coral-cacd.py', 'alias': 'latest'}, {'artifactCollectionName': 'job-https___github.com_DCC-UAB_xnap-project-ed_group_13.git_Starting_point_model-code_Transfer-coral-cacd.py', 'alias': 'v0'}], 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjcxNzk3NzQ3', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6NDY1NDQ4ODY4', 'versionIndex': 0}}, 'version': 'v0'}
+2023-05-24 20:07:05,942 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:05,942 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 9
+2023-05-24 20:07:05,942 INFO    SenderThread:20512 [dir_watcher.py:finish():365] shutting down directory watcher
+2023-05-24 20:07:06,245 INFO    SenderThread:20512 [dir_watcher.py:finish():395] scan: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files
+2023-05-24 20:07:06,245 INFO    SenderThread:20512 [dir_watcher.py:finish():409] scan save: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\config.yaml config.yaml
+2023-05-24 20:07:06,245 INFO    SenderThread:20512 [dir_watcher.py:finish():409] scan save: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\output.log output.log
+2023-05-24 20:07:06,247 INFO    SenderThread:20512 [dir_watcher.py:finish():409] scan save: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\requirements.txt requirements.txt
+2023-05-24 20:07:06,248 INFO    SenderThread:20512 [dir_watcher.py:finish():409] scan save: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-metadata.json wandb-metadata.json
+2023-05-24 20:07:06,248 INFO    SenderThread:20512 [dir_watcher.py:finish():409] scan save: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-summary.json wandb-summary.json
+2023-05-24 20:07:06,250 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 10
+2023-05-24 20:07:06,250 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: poll_exit
+2023-05-24 20:07:06,250 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:06,250 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 10
+2023-05-24 20:07:06,254 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:06,254 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 10
+2023-05-24 20:07:06,254 INFO    SenderThread:20512 [file_pusher.py:finish():167] shutting down file pusher
+2023-05-24 20:07:06,641 INFO    wandb-upload_0:20512 [upload_job.py:push():137] Uploaded file C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\config.yaml
+2023-05-24 20:07:06,712 INFO    wandb-upload_1:20512 [upload_job.py:push():137] Uploaded file C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\output.log
+2023-05-24 20:07:06,763 INFO    wandb-upload_2:20512 [upload_job.py:push():137] Uploaded file C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\requirements.txt
+2023-05-24 20:07:06,809 INFO    wandb-upload_3:20512 [upload_job.py:push():137] Uploaded file C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\files\wandb-summary.json
+2023-05-24 20:07:07,010 INFO    Thread-15 :20512 [sender.py:transition_state():626] send defer: 11
+2023-05-24 20:07:07,011 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:07,011 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 11
+2023-05-24 20:07:07,011 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:07,011 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 11
+2023-05-24 20:07:07,011 INFO    SenderThread:20512 [file_pusher.py:join():172] waiting for file pusher
+2023-05-24 20:07:07,011 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 12
+2023-05-24 20:07:07,011 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:07,011 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 12
+2023-05-24 20:07:07,012 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:07,012 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 12
+2023-05-24 20:07:07,172 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 13
+2023-05-24 20:07:07,172 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:07,172 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 13
+2023-05-24 20:07:07,173 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:07,173 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 13
+2023-05-24 20:07:07,173 INFO    SenderThread:20512 [sender.py:transition_state():626] send defer: 14
+2023-05-24 20:07:07,173 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: defer
+2023-05-24 20:07:07,173 INFO    HandlerThread:20512 [handler.py:handle_request_defer():170] handle defer: 14
+2023-05-24 20:07:07,173 DEBUG   SenderThread:20512 [sender.py:send():375] send: final
+2023-05-24 20:07:07,173 DEBUG   SenderThread:20512 [sender.py:send():375] send: footer
+2023-05-24 20:07:07,173 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: defer
+2023-05-24 20:07:07,173 INFO    SenderThread:20512 [sender.py:send_request_defer():622] handle sender defer: 14
+2023-05-24 20:07:07,174 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: poll_exit
+2023-05-24 20:07:07,175 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: server_info
+2023-05-24 20:07:07,175 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: get_summary
+2023-05-24 20:07:07,175 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: sampled_history
+2023-05-24 20:07:07,175 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: poll_exit
+2023-05-24 20:07:07,175 DEBUG   SenderThread:20512 [sender.py:send_request():402] send_request: server_info
+2023-05-24 20:07:07,318 INFO    MainThread:20512 [wandb_run.py:_footer_history_summary_info():3469] rendering history
+2023-05-24 20:07:07,318 INFO    MainThread:20512 [wandb_run.py:_footer_history_summary_info():3501] rendering summary
+2023-05-24 20:07:07,318 INFO    MainThread:20512 [wandb_run.py:_footer_sync_info():3428] logging synced files
+2023-05-24 20:07:07,321 DEBUG   HandlerThread:20512 [handler.py:handle_request():144] handle_request: shutdown
+2023-05-24 20:07:07,322 INFO    HandlerThread:20512 [handler.py:finish():842] shutting down handler
+2023-05-24 20:07:08,181 INFO    WriterThread:20512 [datastore.py:close():298] close: C:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\wandb\run-20230524_200648-avzvcbf4\run-avzvcbf4.wandb
+2023-05-24 20:07:08,324 INFO    SenderThread:20512 [sender.py:finish():1550] shutting down sender
+2023-05-24 20:07:08,324 INFO    SenderThread:20512 [file_pusher.py:finish():167] shutting down file pusher
+2023-05-24 20:07:08,324 INFO    SenderThread:20512 [file_pusher.py:join():172] waiting for file pusher

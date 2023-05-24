@@ -1,8 +1,10 @@
-PyTorch Version: 2.0.1+cpu
-CUDA device available: False
-Using CUDA device: cpu
+PyTorch Version: 2.0.1+cu117
+CUDA device available: True
+Using CUDA device: cuda:0
 Random Seed: 1
 Task Importance Weight: 0
 Output Path: cacd-ordinal
-Script: c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-ce-cacd.py
-Epoch: 001/002 | Batch 0000/0448 | Cost: 3.8937
+Script: c:/Users/sergi/Documents/GitHub/xnap-project-ed_group_13/Starting point/model-code/Transfer-coral-cacd.py
+Epoch: 001/040 | Batch 0000/0448 | Cost: 35.5924
+Epoch: 001/040 | Batch 0050/0448 | Cost: 32.9183
+Epoch: 001/040 | Batch 0100/0448 | Cost: 32.6018
