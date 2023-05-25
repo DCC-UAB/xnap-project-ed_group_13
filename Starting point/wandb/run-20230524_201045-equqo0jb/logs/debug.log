@@ -24,3 +24,4 @@ config: {'learning_rate': 0.0005, 'architecture': 'coral-transfer', 'dataset': '
 2023-05-24 20:10:46,489 INFO    MainThread:20868 [wandb_run.py:_redirect():2078] Wrapping output streams.
 2023-05-24 20:10:46,489 INFO    MainThread:20868 [wandb_run.py:_redirect():2103] Redirects installed.
 2023-05-24 20:10:46,489 INFO    MainThread:20868 [wandb_init.py:init():829] run started, returning control to user process
+2023-05-24 23:55:52,434 WARNING MsgRouterThr:20868 [router.py:message_loop():77] message_loop has been closed

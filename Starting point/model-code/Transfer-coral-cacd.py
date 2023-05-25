@@ -442,12 +442,12 @@ if __name__ == '__main__':
                        'train_mae':train_mae, 'train_mse':train_mse,
                        'test_mae':test_mae, 'test_mse':test_mse,
                        'valid_mae':valid_mae, 'valid_mse':valid_mse})
-
+        """
         if valid_mae < best_mae:
             best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
             ########## SAVE MODEL #############
             torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
-
+        """
 
         s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
             valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
