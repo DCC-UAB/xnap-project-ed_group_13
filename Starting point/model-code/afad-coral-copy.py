@@ -36,12 +36,12 @@ if __name__ == '__main__':
     num_epochs = 2
     wandb.init(
     # set the wandb project where this run will be logged
-        project="aging-ramon",
+        project="scheduler",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "coral",
+            "architecture": "coral-schedule",
             "dataset": "afad",
             "epochs": num_epochs,
             }
@@ -253,11 +253,11 @@ def compute_mae_and_mse(model, data_loader, device):
 
 
 if __name__ == '__main__':
-    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = '../datasets/afad_train.csv'
-    VALID_CSV_PATH = '../datasets/afad_valid.csv'
-    TEST_CSV_PATH = '../datasets/afad_test.csv'
-    IMAGE_PATH = '../../../shared_datasets/AFAD/orig/tarball/AFAD-Full/'
+
+    TRAIN_CSV_PATH = 'datasets/afad_train.csv'
+    VALID_CSV_PATH = 'datasets/afad_valid.csv'
+    TEST_CSV_PATH = 'datasets/afad_test.csv'
+    IMAGE_PATH = '../../../../Desktop/Datasets/AFAD-Full/'
 
 
 

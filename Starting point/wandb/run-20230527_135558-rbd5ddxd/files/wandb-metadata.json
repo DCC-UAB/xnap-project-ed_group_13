@@ -1,0 +1,50 @@
+{
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.9.13",
+    "heartbeatAt": "2023-05-27T11:55:59.248750",
+    "startedAt": "2023-05-27T11:55:58.585799",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "c:\\Users\\sergi\\Documents\\GitHub\\xnap-project-ed_group_13\\Starting point\\model-code\\afad-coral-copy.py",
+    "codePath": "Starting point\\model-code\\afad-coral-copy.py",
+    "git": {
+        "remote": "https://github.com/DCC-UAB/xnap-project-ed_group_13.git",
+        "commit": "ab489b21eaaa462dd3b6023471c18568abfb1fb3"
+    },
+    "email": "gioserby@gmail.com",
+    "root": "C:/Users/sergi/Documents/GitHub/xnap-project-ed_group_13",
+    "host": "DESKTOP-MNFHNID",
+    "username": "sergi",
+    "executable": "C:\\Users\\sergi\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0\\python.exe",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 3696.0,
+        "min": 0.0,
+        "max": 3696.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3696.0,
+            "min": 0.0,
+            "max": 3696.0
+        }
+    ],
+    "disk": {
+        "total": 464.6364326477051,
+        "used": 408.1464424133301
+    },
+    "gpu": "NVIDIA GeForce GTX 1660 SUPER",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce GTX 1660 SUPER",
+            "memory_total": 6442450944
+        }
+    ],
+    "memory": {
+        "total": 15.926158905029297
+    }
+}
