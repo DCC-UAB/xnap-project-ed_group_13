@@ -283,7 +283,7 @@ if __name__ == '__main__':
     CUDA = 0
     SEED = 1
     IMP_WEIGHT = 0
-    OUTPATH = 'afad-model1'
+    OUTPATH = 'afad-resnet50'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
