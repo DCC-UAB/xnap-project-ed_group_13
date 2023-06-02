@@ -1,6 +1,0 @@
-PyTorch Version: 2.0.1+cpu
-CUDA device available: False
-Using CUDA device: cpu
-Random Seed: 1
-Task Importance Weight: 0
-Output Path: cacd-ordinal

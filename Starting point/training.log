@@ -1,7 +1,0 @@
-PyTorch Version: 2.0.1+cpu
-CUDA device available: False
-Using CUDA device: cpu
-Random Seed: 1
-Task Importance Weight: 0
-Output Path: .
-Script: c:/Users/sergi/Documents/GitHub/xnap-project-ed_group_13/Starting point/model-code/Transfer-coral-cacd.py

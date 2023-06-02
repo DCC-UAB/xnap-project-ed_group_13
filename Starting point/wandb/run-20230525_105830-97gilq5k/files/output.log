@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-afad.py", line 409, in <module>
-    cost = cost_fn(logits, levels, imp)
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-afad.py", line 349, in cost_fn
-    val = (-torch.sum((F.logsigmoid(logits)*levels
-RuntimeError: The size of tensor a (48) must match the size of tensor b (25) at non-singleton dimension 1

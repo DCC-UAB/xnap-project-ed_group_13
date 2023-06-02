@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 362, in <module>
-    model.fc.bias.requires_grad = True
-AttributeError: 'NoneType' object has no attribute 'requires_grad'

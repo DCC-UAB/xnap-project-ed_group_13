@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 353, in <module>
-    model = resnet34(NUM_CLASSES, GRAYSCALE)
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 329, in resnet34
-    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model.state_dict}
-UnboundLocalError: local variable 'pretrained_dict' referenced before assignment

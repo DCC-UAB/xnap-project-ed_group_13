@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 351, in <module>
-    model = resnet34(NUM_CLASSES, GRAYSCALE)
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 328, in resnet34
-    model.load_state_dict(resnet34(weights='IMAGENET1K_V1').state_dict())
-TypeError: resnet34() got an unexpected keyword argument 'weights'

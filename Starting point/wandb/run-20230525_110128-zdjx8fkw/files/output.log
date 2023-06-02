@@ -1,6 +1,0 @@
-
-Epoch: 001/040 | Batch 0000/0462 | Cost: 20.6123
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-afad.py", line 403, in <module>
-    features = features.to(DEVICE)
-KeyboardInterrupt

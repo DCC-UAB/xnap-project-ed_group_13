@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "c:\Users\sergi\Documents\GitHub\xnap-project-ed_group_13\Starting point\model-code\Transfer-coral-cacd.py", line 259, in <module>
-    torch.manual_seed(RANDOM_SEED)
-  File "C:\Users\sergi\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0\LocalCache\local-packages\Python39\site-packages\torch\random.py", line 36, in manual_seed
-    seed = int(seed)
-TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
