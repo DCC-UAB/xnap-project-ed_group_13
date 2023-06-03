@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
-from afad_coral_copy import resnet34 
+from AFAD.afad_coral_copy import resnet34 
 
 
 
@@ -36,12 +36,12 @@ model34 = resnet34(NUM_CLASSES, GRAYSCALE) # creació del model
 
 models = {
     'cacd':{
-        'inicial':'cacd_coral_basic/best_model.pt',
+        'inicial':'CACD/cacd_coral_basic/best_model.pt',
         'final':''
         },
     'afad':{
-        'inicial':'afad-model1/best_model.pt',
-        'final':'best_model_afad/best_model.pt'
+        'inicial':'AFAD/afad-model1/best_model.pt',
+        'final':'AFAD/best_model_afad/best_model.pt'
         }
     }
 
@@ -49,13 +49,13 @@ models = {
 model34.load_state_dict(torch.load(models[DATASET][MODEL])) # load del model
 
 
-foto_cacd = Image.open('../../../shared_datasets/CACD/centercropped/jpg/CACD2000/15_Chris_Brown_0007.jpg')
-foto_afad = Image.open('../../../shared_datasets/AFAD/orig/tarball/AFAD-Full/23/111/330-0.jpg')
-foto_ramon = Image.open('../../../shared_datasets/probes/proba_foto_ramon.jpg') # fotos de proba
-foto_bebe = Image.open('../../../shared_datasets/probes/q_tonto_jajaj.jpg') # fotos de proba
-foto_viejo = Image.open('../../../shared_datasets/probes/abueloo.jpeg') # fotos de proba
-foto_berni = Image.open('../../../shared_datasets/probes/proba_berni.jpg')
-foto = ... # escollir l'imatge de proba
+foto_cacd = Image.open('../../shared_datasets/CACD/centercropped/jpg/CACD2000/15_Chris_Brown_0007.jpg')
+foto_afad = Image.open('../../shared_datasets/AFAD/orig/tarball/AFAD-Full/23/111/330-0.jpg')
+foto_ramon = Image.open('probes_fotos/proba_foto_ramon.jpg') # fotos de proba
+foto_bebe = Image.open('probes_fotos/q_tonto_jajaj.jpg') # fotos de proba
+foto_viejo = Image.open('probes_fotos/abueloo.jpeg') # fotos de proba
+foto_berni = Image.open('probes_fotos/proba_berni.jpg')
+foto = foto_berni # escollir l'imatge de proba
 custom_transform = transforms.Compose([transforms.Resize((128, 128)), 
                                        transforms.ToTensor()])
 
