@@ -14,8 +14,9 @@ from AFAD.afad_coral_copy import resnet34
 # Per carregar un model primer has de crear l'arquitectura en questió i despres carregues el fitxer .pt de torch amb un load
 '''
 
-DATASET = 'afad' # seleccionar el dataset del model [cacd/afad]
-MODEL = 'final' # seleccionar quin model es vol [inicial/final]
+DATASET = 'cacd' if int(input('seleccionar el dataset del model cacd(1)/afad(2)\n')) == 1 else 'afad'
+
+MODEL = 'inicial' if int(input('seleccionar quin model es vol inicial(1)/final(2)\n')) == 1 else 'final'
 
 
 if DATASET == 'cacd':
@@ -49,23 +50,27 @@ models = {
 model34.load_state_dict(torch.load(models[DATASET][MODEL])) # load del model
 
 
-foto_cacd = Image.open('../../shared_datasets/CACD/centercropped/jpg/CACD2000/15_Chris_Brown_0007.jpg')
-foto_afad = Image.open('../../shared_datasets/AFAD/orig/tarball/AFAD-Full/23/111/330-0.jpg')
-foto_ramon = Image.open('probes_fotos/proba_foto_ramon.jpg') # fotos de proba
-foto_bebe = Image.open('probes_fotos/q_tonto_jajaj.jpg') # fotos de proba
-foto_viejo = Image.open('probes_fotos/abueloo.jpeg') # fotos de proba
-foto_berni = Image.open('probes_fotos/proba_berni.jpg')
-foto = foto_berni # escollir l'imatge de proba
+
+fotos = ['ramon',
+         'bebe',
+         'vell',
+         'berni']
+fotos_dir = ['probes_fotos/proba_foto_ramon.jpg',
+             'probes_fotos/q_tonto_jajaj.jpg',
+             'probes_fotos/abueloo.jpeg',
+             'probes_fotos/proba_berni.jpg']
+
+num = int(input(f"Escull l'imatge que vols probar\n -ramon(1)\n -bebe(2)\n -vell(3)\n -berni(4)\n"))
+
+foto = Image.open(fotos_dir[num-1]) # escollir l'imatge de proba
 custom_transform = transforms.Compose([transforms.Resize((128, 128)), 
                                        transforms.ToTensor()])
 
 foto = custom_transform(foto)
 foto = torch.unsqueeze(foto, 0)
 probas = model34(foto)[1]
-# predict_levels = probas > 0.5
-# print(predict_levels)
+
 probas = probas.detach().numpy()
 predicted_labels = np.sum(probas>0.5)
-print(predicted_labels+ADD_CLASS)
-print(probas)
+print(f'El {fotos[num-1]} té {predicted_labels+ADD_CLASS} anys')
 
