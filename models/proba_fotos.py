@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
-from AFAD.afad_coral import resnet34 
+from AFAD.afad_coral import resnet34
 
 
 
