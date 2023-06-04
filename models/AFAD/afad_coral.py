@@ -300,6 +300,8 @@ if __name__ == '__main__':
 
 
     custom_transform = transforms.Compose([transforms.Resize((128, 128)),
+                                           #transforms.RandomHorizontalFlip(p=0.5),
+                                           #transforms.RandomRotation(degrees=10),
                                         transforms.RandomCrop((120, 120)),
                                         transforms.ToTensor()])
 
