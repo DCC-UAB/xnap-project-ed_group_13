@@ -245,17 +245,17 @@ Aplicant tots aquest canvis sobre un mateix model obtenim els següents resultat
 
 ![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/237bfa55-0487-4f55-98cc-bf30d062f01b)
 
-MSE: 19.27
-RMSE: 4.39
-MAE: 3.19
+- MSE: 19.27
+- RMSE: 4.39
+- MAE: 3.19
 
 #### CACD:
 
 ![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/60034ffe-77ab-4227-9baf-1600eb92cb3c)
 
-MSE: 59.60
-RMSE: 7.72
-MAE: 5.73
+- MSE: 59.60
+- RMSE: 7.72
+- MAE: 5.73
 
 Si comparem aquests resultats amb els valors que obteniem amb el valor original, observem una millora en en els valors del MAE i MSE, i una forta reducció del overfit.
 També podem fer una comparació de les distribucions de les prediccions. A la esquerra el model inicial, i a la dreta el model final.
