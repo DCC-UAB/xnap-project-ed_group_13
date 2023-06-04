@@ -3,7 +3,9 @@ import numpy as np
 import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
+import matplotlib.pyplot as plt
 from AFAD.afad_coral import resnet34
+import easygui
 
 
 
@@ -14,9 +16,9 @@ from AFAD.afad_coral import resnet34
 # Per carregar un model primer has de crear l'arquitectura en questió i despres carregues el fitxer .pt de torch amb un load
 '''
 
-DATASET = 'cacd' if int(input('seleccionar el dataset del model cacd(1)/afad(2)\n')) == 1 else 'afad'
+DATASET = 'cacd' if int(input('seleccionar el dataset del model CACD(1)/AFAD(2)\n Escull:')) == 1 else 'afad'
 
-MODEL = 'inicial' if int(input('seleccionar quin model es vol inicial(1)/final(2)\n')) == 1 else 'final'
+MODEL = 'inicial' if int(input('seleccionar quin model es vol inicial(1)/final(2)\n Escull:')) == 1 else 'final'
 
 
 if DATASET == 'cacd':
@@ -48,29 +50,36 @@ models = {
 
 
 model34.load_state_dict(torch.load(models[DATASET][MODEL])) # load del model
+path_altre=""
 
 
+fotos = ['Ramon',
+         'Infant',
+         'Avi',
+         'Bernat',
+         'Adrià',
+         'Noia AFAD',
+         'Actor CACD',
+         'Adarsh',
+         'Sergio',
+         "Altre"]
 
-fotos = ['ramon',
-         'bebe',
-         'vell',
-         'berni',
-         'adri',
-         'noia AFAD',
-         'actor CACD',
-         'adarsh',
-         'sergio']
-fotos_dir = ['probes_fotos/proba_foto_ramon.jpg',
-             'probes_fotos/q_tonto_jajaj.jpg',
-             'probes_fotos/abueloo.jpeg',
-             'probes_fotos/proba_berni.jpg',
-             'probes_fotos/aadri.jpg',
-             'probes_fotos\afad_noia_jove.jpg',
-             'probes_fotos\cacd_mcgregor.jpg',
-             'probes_fotos\darsh.jpg',
-             'probes_fotos\sergioo.jpg']
-fotos_str = str(' '.join([f' -{el} ({i+1})\n' for i, el in enumerate(fotos)]))
-num = int(input(f"Escull l'imatge que vols probar\n{fotos_str}")) #\n -ramon(1)\n -bebe(2)\n -vell(3)\n -berni(4)\n"))
+fotos_dir = ['probes_fotos/Ramon.jpg',
+             'probes_fotos/Infant.jpg',
+             'probes_fotos/Avi.jpeg',
+             'probes_fotos/Bernat.jpg',
+             'probes_fotos/Adria.jpg',
+             'probes_fotos\AFAD_Noia.jpg',
+             'probes_fotos\CACD_Actor.jpg',
+             'probes_fotos\Adarsh.jpg',
+             'probes_fotos\Sergio.jpg']
+
+fotos_str = str(''.join([f' - {el} ({i+1})\n' for i, el in enumerate(fotos)]))
+num = int(input(f"Escull l'imatge que vols probar\n{fotos_str} Escull:")) #\n -ramon(1)\n -bebe(2)\n -vell(3)\n -berni(4)\n"))
+
+if num==10:
+    path_altre=easygui.fileopenbox(title="Seleccionar imagen")
+    fotos_dir.append(path_altre)
 
 foto = Image.open(fotos_dir[num-1]) # escollir l'imatge de proba
 custom_transform = transforms.Compose([transforms.Resize((128, 128)), 
@@ -82,5 +91,6 @@ probas = model34(foto)[1]
 
 probas = probas.detach().numpy()
 predicted_labels = np.sum(probas>0.5)
+
 print(f"L'imatge '{fotos[num-1]}' té {predicted_labels+ADD_CLASS} anys")
 

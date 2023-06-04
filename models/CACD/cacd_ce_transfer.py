@@ -42,7 +42,7 @@ if __name__ == '__main__':
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "ordinal-ce",
+            "architecture": "tranfer-ce",
             "dataset": "cacd",
             "epochs": num_epochs,
             }
@@ -54,19 +54,6 @@ if __name__ == '__main__':
     
 
 
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
 
 
 ###################
@@ -161,7 +148,6 @@ if __name__ == '__main__':
     NUM_WORKERS = 4
     CUDA = -1
     SEED = 1
-    IMP_WEIGHT = 0
     OUTPATH = 'cacd-ordinal'
 
     if CUDA >= 0:
@@ -174,7 +160,6 @@ if __name__ == '__main__':
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
     if not os.path.exists(PATH):
@@ -192,7 +177,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -218,13 +202,9 @@ if __name__ == '__main__':
 
 
     # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
+
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
     imp = imp.to(DEVICE)
 
 
