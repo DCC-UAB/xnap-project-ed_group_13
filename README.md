@@ -276,6 +276,19 @@ Alhora que buscavem millorar les prediccions, hem aprés també a entendre millo
 
 Com a millores que proposem per avançar aquest treball, una opció que creiem molt important i que no hem provat degut a falta d’hores en les màquines virtuals, és la de entrenar el model amb 200 epochs, com fa l’starting point, ja que creiem que el model arrivaria a tenir millors resultats (tot i que no desmesuradament millors).
 
+## Execució del codi per fer prediccions
+El codi probes_fotos.py és un codi que ens deixa fer prediccions d’edat amb diferents models. Després d’executar l’arxiu .py, hem de seguir aquests passos:
+- Primer escollirem el dataset amb el que s’haurà entrenat el model: AFAD o CACD.
+- Ara decidirem si volem utilitzar el model inicial o el final.
+- Escollim la imatge entre les que hem guardat al GitHub per fer proves o amb una del propi disc:
+
+![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/96b5a89d-7632-4481-b3f0-087a48053034)
+
+
+- I ens retornarà el resultat:
+
+![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/9fc30d09-9243-4f8a-a8fd-0c4535bd4339)
+
 ## Contributors
 
 Bernat Medina Perez - 1606505@uab.cat
