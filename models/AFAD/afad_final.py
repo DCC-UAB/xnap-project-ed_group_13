@@ -36,8 +36,7 @@ if __name__ == '__main__':
     NUM_WORKERS = 4
     CUDA = 0
     SEED = 1
-    IMP_WEIGHT = 0
-    OUTPATH = 'cacd-ordinal'
+    OUTPATH = 'afad-final'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
@@ -49,7 +48,6 @@ if __name__ == '__main__':
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
     if not os.path.exists(PATH):
@@ -67,7 +65,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -84,16 +81,16 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 40
+    num_epochs = 50
 
     wandb.init(
     # set the wandb project where this run will be logged
-        project="transfer-coral-afad",
+        project="afad_final",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "coral-transfer",
+            "architecture": "afad_final",
             "dataset": "afad",
             "epochs": num_epochs,
             }
@@ -111,29 +108,13 @@ if __name__ == '__main__':
     ages = torch.tensor(ages, dtype=torch.float)
 
 
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
 
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
 
 if __name__ == '__main__':
     # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
+
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
     imp = imp.to(DEVICE)
 
 
@@ -172,6 +153,8 @@ class AFADDatasetAge(Dataset):
 
 if __name__ == '__main__':
     custom_transform = transforms.Compose([transforms.Resize((128, 128)),
+                                           transforms.RandomHorizontalFlip(p=0.5),
+                                           transforms.RandomRotation(degrees=10),
                                         transforms.RandomCrop((120, 120)),
                                         transforms.ToTensor()])
 
@@ -430,26 +413,23 @@ if __name__ == '__main__':
 
         model.eval()
         with torch.set_grad_enabled(False):
-            valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-                                                    device=DEVICE)
             train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
             test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                     device=DEVICE)
             wandb.log({'epoch':epoch, 
                        'train_mae':train_mae, 'train_mse':train_mse,
-                       'test_mae':test_mae, 'test_mse':test_mse,
-                       'valid_mae':valid_mae, 'valid_mse':valid_mse})
-        """
+                       'test_mae':test_mae, 'test_mse':test_mse})
+        
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
         if valid_mae < best_mae:
             best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
             ########## SAVE MODEL #############
             torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
-        """
 
-        s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
-            valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
-        print(s)
+        
+        print(train_mse,test_mse)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 

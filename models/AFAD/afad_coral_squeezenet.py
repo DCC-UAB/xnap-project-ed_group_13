@@ -33,75 +33,62 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 5
+    num_epochs = 35
     wandb.init(
     # set the wandb project where this run will be logged
-        project="proves2-squeeze",
+        project="squeezenet-afad",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "ce",
-            "dataset": "cacd",
+            "architecture": "coral",
+            "dataset": "afad",
             "epochs": num_epochs,
             }
     )
     
-    NUM_CLASSES = 49
+    NUM_CLASSES = 26
     BATCH_SIZE = 256
     GRAYSCALE = False
     
 
 
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
 
 
 ###################
 # Dataset
 ###################
 
-class CACDDataset(Dataset): #lectura del dataset (classe)
-    """Custom Dataset for loading CACD face images"""
+class AFADDatasetAge(Dataset):
+    """Custom Dataset for loading AFAD face images"""
 
-    def __init__(self,
-                 csv_path, img_dir, transform=None): 
+    def __init__(self, csv_path, img_dir, transform=None):
 
-        df = pd.read_csv(csv_path, index_col=0) #llegeix csv train, test o val
-        self.img_dir = img_dir #directori de les imatges
-        self.csv_path = csv_path #path del csv
-        self.img_names = df['file'].values #nom de les imatges
-        self.y = df['age'].values #edat
-        self.transform = transform #transformacions
+        df = pd.read_csv(csv_path, index_col=0)
+        self.img_dir = img_dir
+        self.csv_path = csv_path
+        self.img_paths = df['path']
+        self.y = df['age'].values
+        self.transform = transform
 
-    def __getitem__(self, index): #rebre una imate al donar una posicio
+    def __getitem__(self, index):
         img = Image.open(os.path.join(self.img_dir,
-                                      self.img_names[index])) #obrim la imatge
+                                      self.img_paths[index]))
 
         if self.transform is not None:
-            img = self.transform(img) #apliquem transformacions
+            img = self.transform(img)
 
-        label = self.y[index] #guardem edat com label
-        
-        levels = [1]*label + [0]*(49 - 1 - label) #1 per fins la edat corresponent, 0 per les altres (hi han 49)
+        label = self.y[index]
+        # levels = [1]*label + [0]*(NUM_CLASSES - 1 - label)
+        levels = [1]*label + [0]*(26 - 1 - label)
+        levels = torch.tensor(levels, dtype=torch.float32)
 
-        levels = torch.tensor(levels, dtype=torch.float32) #a tensor
-        
         return img, label, levels
 
     def __len__(self):
         return self.y.shape[0]
+
+
 
 ##########################
 # MODEL
@@ -161,7 +148,7 @@ class SqueezeNet(nn.Module):
         return logits, probas
 
 
-def resnet34(num_classes, grayscale):
+def squeezenet(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
     model = SqueezeNet(num_classes)
     return model
@@ -199,17 +186,16 @@ def compute_mae_and_mse(model, data_loader, device):
 
 if __name__ == '__main__':
     print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_train.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_test.csv'
-    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/CACD2000/'
+    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_train.csv'
+    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_valid.csv'
+    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_test.csv'
+    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/AFAD-Full/'
 
 
-    NUM_WORKERS = 6
+    NUM_WORKERS = 4
     CUDA = 0
     SEED = 1
-    IMP_WEIGHT = 0
-    OUTPATH = 'afad-modelx'
+    OUTPATH = 'afad-squeezenet'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
@@ -221,7 +207,6 @@ if __name__ == '__main__':
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
     if not os.path.exists(PATH):
@@ -238,7 +223,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -264,13 +248,8 @@ if __name__ == '__main__':
 
 
     # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
     imp = imp.to(DEVICE)
 
 
@@ -280,7 +259,7 @@ if __name__ == '__main__':
                                         transforms.RandomCrop((120, 120)),
                                         transforms.ToTensor()])
 
-    train_dataset = CACDDataset(csv_path=TRAIN_CSV_PATH,
+    train_dataset = AFADDatasetAge(csv_path=TRAIN_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform)
 
@@ -289,11 +268,11 @@ if __name__ == '__main__':
                                             transforms.CenterCrop((120, 120)),
                                             transforms.ToTensor()])
 
-    test_dataset = CACDDataset(csv_path=TEST_CSV_PATH,
+    test_dataset = AFADDatasetAge(csv_path=TEST_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform2)
 
-    valid_dataset = CACDDataset(csv_path=VALID_CSV_PATH,
+    valid_dataset = AFADDatasetAge(csv_path=VALID_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform2)
 
@@ -316,7 +295,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
-    model = resnet34(NUM_CLASSES, GRAYSCALE)
+    model = squeezenet(NUM_CLASSES, GRAYSCALE)
 
     model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
@@ -370,23 +349,19 @@ if __name__ == '__main__':
                        'train_mae':train_mae, 'train_mse':train_mse,
                        'test_mae':test_mae, 'test_mse':test_mse})
             print(train_mse,test_mse)
-        """
-        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-                                                device=DEVICE)
-        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-                                                device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                          device=DEVICE)
-        #if valid_mae < best_mae:
-            #best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
-            ########## SAVE MODEL #############
-            #torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
-        
-        
-        #s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
-        #    valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
-        #print(s)
-        """
+            
+
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
+        if valid_mae < best_mae:
+            best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
+            ######### SAVE MODEL #############
+            torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
+
+
+        s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
+            valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
+        print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
@@ -400,19 +375,19 @@ if __name__ == '__main__':
 
         train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                        device=DEVICE)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                device=DEVICE)
         test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                 device=DEVICE)
 
-        #s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
-            #train_mae, torch.sqrt(train_mse),
-            #valid_mae, torch.sqrt(valid_mse),
-            #test_mae, torch.sqrt(test_mse))
+        s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
+            train_mae, torch.sqrt(train_mse),
+            valid_mae, torch.sqrt(valid_mse),
+            test_mae, torch.sqrt(test_mse))
         print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
-
+    
     s = 'Total Training Time: %.2f min' % ((time.time() - start_time)/60)
     print(s)
     with open(LOGFILE, 'a') as f:
@@ -420,7 +395,7 @@ if __name__ == '__main__':
 
 
     ########## EVALUATE BEST MODEL ######
-    """
+    
     model.load_state_dict(torch.load(os.path.join(PATH, 'best_model.pt')))
     model.eval()
 
@@ -440,7 +415,7 @@ if __name__ == '__main__':
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
-    """
+    
     ########## SAVE PREDICTIONS ######
     all_pred = []
     all_probas = []
@@ -460,3 +435,4 @@ if __name__ == '__main__':
         all_pred = ','.join(all_pred)
         f.write(all_pred)
     wandb.finish()
+

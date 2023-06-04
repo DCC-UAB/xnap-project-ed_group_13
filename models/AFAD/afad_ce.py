@@ -1,8 +1,7 @@
-
 # coding: utf-8
 
 #############################################
-# Consistent Cumulative Logits with ResNet-34
+# Cross Entropy with ResNet-34
 #############################################
 
 # Imports
@@ -27,6 +26,8 @@ import wandb
 torch.backends.cudnn.deterministic = True
 
 
+
+
 if __name__ == '__main__':
     ##########################
     # SETTINGS
@@ -34,44 +35,29 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 20
+    num_epochs = 50
     wandb.init(
     # set the wandb project where this run will be logged
-        project="mobilenet-afad",
+        project="afad-ce",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "coral",
+            "architecture": "ce",
             "dataset": "afad",
             "epochs": num_epochs,
             }
     )
     
     NUM_CLASSES = 26
-    BATCH_SIZE = 128
+    BATCH_SIZE = 256
     GRAYSCALE = False
     
-
-
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
-
 
 ###################
 # Dataset
 ###################
+
 
 class AFADDatasetAge(Dataset):
     """Custom Dataset for loading AFAD face images"""
@@ -93,14 +79,13 @@ class AFADDatasetAge(Dataset):
             img = self.transform(img)
 
         label = self.y[index]
-        # levels = [1]*label + [0]*(NUM_CLASSES - 1 - label)
-        levels = [1]*label + [0]*(26 - 1 - label)
-        levels = torch.tensor(levels, dtype=torch.float32)
 
-        return img, label, levels
+        return img, label
 
     def __len__(self):
         return self.y.shape[0]
+
+
 
 
 
@@ -109,101 +94,132 @@ class AFADDatasetAge(Dataset):
 ##########################
 
 
-def conv_dw(in_channels, out_channels, stride=1):
-    """Depthwise separable convolution"""
-    return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1, groups=in_channels, bias=False),
-        nn.BatchNorm2d(in_channels),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    )
+def conv3x3(in_planes, out_planes, stride=1):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
 
 
-class MobileNetCORAL(nn.Module):
-    def __init__(self, num_classes):
-        super(MobileNetCORAL, self).__init__()
-        self.num_classes=num_classes
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            conv_dw(32, 64, stride=1),
-            conv_dw(64, 128, stride=2),
-            conv_dw(128, 128, stride=1),
-            conv_dw(128, 256, stride=2),
-            conv_dw(256, 256, stride=1),
-            conv_dw(256, 512, stride=2),
-            conv_dw(512, 512, stride=1),
-            conv_dw(512, 512, stride=1),
-            conv_dw(512, 512, stride=1),
-            conv_dw(512, 512, stride=1),
-            conv_dw(512, 1024, stride=2),
-            conv_dw(1024, 1024, stride=1),
-            nn.AdaptiveAvgPool2d(1)
-        )
-        self.fc = nn.Linear(1024, 1, bias=False)
-        self.linear_1_bias = nn.Parameter(torch.zeros(self.num_classes-1).float())
-    
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
     def forward(self, x):
-        x = self.features(x)
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+
+class ResNet(nn.Module):
+
+    def __init__(self, block, layers, num_classes, grayscale):
+        self.inplanes = 64
+        if grayscale:
+            in_dim = 1
+        else:
+            in_dim = 3
+        super(ResNet, self).__init__()
+        self.conv1 = nn.Conv2d(in_dim, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.avgpool = nn.AvgPool2d(4)
+        self.fc = nn.Linear(512, num_classes)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, (2. / n)**.5)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
+
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+
         x = x.view(x.size(0), -1)
         logits = self.fc(x)
-        logits = logits + self.linear_1_bias
-        probas = torch.sigmoid(logits)
+        probas = F.softmax(logits, dim=1)
         return logits, probas
 
 
 def resnet34(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
-    model = MobileNetCORAL(num_classes)
+    model = ResNet(block=BasicBlock, 
+                   layers=[3, 4, 6, 3],
+                   num_classes=num_classes,
+                   grayscale=grayscale)
     return model
 
 
 ###########################################
 # Initialize Cost, Model, and Optimizer
 ###########################################
-
-def cost_fn(logits, levels, imp):
-    val = (-torch.sum((F.logsigmoid(logits)*levels
-                      + (F.logsigmoid(logits) - logits)*(1-levels))*imp,
-           dim=1))
-    return torch.mean(val)
-
-
-
-def compute_mae_and_mse(model, data_loader, device):
-    mae, mse, num_examples = 0, 0, 0
-    for i, (features, targets, levels) in enumerate(data_loader):
-
-        features = features.to(device)
-        targets = targets.to(device)
-
-        logits, probas = model(features)
-        predict_levels = probas > 0.5
-        predicted_labels = torch.sum(predict_levels, dim=1)
-        num_examples += targets.size(0)
-        mae += torch.sum(torch.abs(predicted_labels - targets))
-        mse += torch.sum((predicted_labels - targets)**2)
-    mae = mae.float() / num_examples
-    mse = mse.float() / num_examples
-    return mae, mse
-
-
 if __name__ == '__main__':
-    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_train_sample.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_test_sample.csv'
-    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/AFAD-Full/'
-
+    
+    TRAIN_CSV_PATH = '../datasets/afad_train.csv'
+    VALID_CSV_PATH = '../datasets/afad_valid.csv'
+    TEST_CSV_PATH = '../datasets/afad_test.csv'
+    IMAGE_PATH = '../../../../../Desktop/Datasets/AFAD-Full/'
+    
 
     NUM_WORKERS = 4
-    CUDA = 0
+    CUDA = -1
     SEED = 1
-    IMP_WEIGHT = 0
-    OUTPATH = 'afad-modelx'
+    OUTPATH = 'afad-model1'
 
     if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
@@ -215,7 +231,6 @@ if __name__ == '__main__':
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
     if not os.path.exists(PATH):
@@ -232,7 +247,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -242,30 +256,14 @@ if __name__ == '__main__':
             f.write('%s\n' % entry)
             f.flush()
 
-
-
-
-    # Architecture
+    
+        # Architecture
     
 
     df = pd.read_csv(TRAIN_CSV_PATH, index_col=0)
     ages = df['age'].values
     del df
     ages = torch.tensor(ages, dtype=torch.float)
-
-
-
-
-
-    # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
-    imp = imp.to(DEVICE)
 
 
 
@@ -306,8 +304,6 @@ if __name__ == '__main__':
                             num_workers=NUM_WORKERS)
 
 
-
-
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
     model = resnet34(NUM_CLASSES, GRAYSCALE)
@@ -316,7 +312,23 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
 
 
+    def compute_mae_and_mse(model, data_loader, device):
+        mae, mse, num_examples = 0., 0., 0
+        for i, (features, targets) in enumerate(data_loader):
+                
+            features = features.to(device)
+            targets = targets.to(device)
 
+            logits, probas = model(features)
+            _, predicted_labels = torch.max(probas, 1)
+            num_examples += targets.size(0)
+            mae += torch.sum(torch.abs(predicted_labels - targets))
+            mse += torch.sum((predicted_labels - targets)**2)
+        
+        mae = mae.float()/num_examples
+        mse = mse.float()/num_examples
+        
+        return mae, mse
 
 
     start_time = time.time()
@@ -325,16 +337,14 @@ if __name__ == '__main__':
     for epoch in range(num_epochs):
 
         model.train()
-        for batch_idx, (features, targets, levels) in enumerate(train_loader):
+        for batch_idx, (features, targets) in enumerate(train_loader):
 
             features = features.to(DEVICE)
-            targets = targets
             targets = targets.to(DEVICE)
-            levels = levels.to(DEVICE)
 
             # FORWARD AND BACK PROP
             logits, probas = model(features)
-            cost = cost_fn(logits, levels, imp)
+            cost = F.cross_entropy(logits, targets)
             optimizer.zero_grad()
 
             cost.backward()
@@ -343,8 +353,6 @@ if __name__ == '__main__':
             optimizer.step()
 
             # LOGGING
-            model.eval()
-
             if not batch_idx % 50:
                 s = ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
                     % (epoch+1, num_epochs, batch_idx,
@@ -353,7 +361,6 @@ if __name__ == '__main__':
                 with open(LOGFILE, 'a') as f:
                     f.write('%s\n' % s)
 
-        # Wandb evaluation
         model.eval()
         with torch.set_grad_enabled(False):
             train_mae, train_mse = compute_mae_and_mse(model, train_loader,
@@ -363,22 +370,20 @@ if __name__ == '__main__':
             wandb.log({'epoch':epoch, 
                        'train_mae':train_mae, 'train_mse':train_mse,
                        'test_mae':test_mae, 'test_mse':test_mse})
-            
-        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-                                                device=DEVICE)
-        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-                                                device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                          device=DEVICE)
-        #if valid_mae < best_mae:
-            #best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
+        
+
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
+
+        if valid_mae < best_mae:
+            best_mae, best_rmse, best_epoch = test_mae, torch.sqrt(test_mse), epoch
             ########## SAVE MODEL #############
-            #torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
+            torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
 
 
-        #s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
-        #    valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
-        #print(s)
+        s = 'MAE/RMSE: | Current Test: %.2f/%.2f Ep. %d | Best Test : %.2f/%.2f Ep. %d' % (
+            test_mae, torch.sqrt(test_mse), epoch, best_mae, best_rmse, best_epoch)
+        print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
@@ -392,15 +397,11 @@ if __name__ == '__main__':
 
         train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                        device=DEVICE)
         test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                 device=DEVICE)
 
-        #s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
-            #train_mae, torch.sqrt(train_mse),
-            #valid_mae, torch.sqrt(valid_mse),
-            #test_mae, torch.sqrt(test_mse))
+        s = 'MAE/RMSE: | Train: %.2f/%.2f | Test: %.2f/%.2f' % (
+            train_mae, torch.sqrt(train_mse), test_mae, torch.sqrt(test_mse))
         print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
@@ -410,46 +411,26 @@ if __name__ == '__main__':
     with open(LOGFILE, 'a') as f:
         f.write('%s\n' % s)
 
+    s = 'Best MAE: %.2f | Best RMSE: %.2f | Best Epoch: %d' % (best_mae, best_rmse, best_epoch)
+    print(s)
+    with open(LOGFILE, 'a') as f:
+        f.write('%s\n' % s)
 
-    ########## EVALUATE BEST MODEL ######
-    """
+    ########## SAVE PREDICTIONS ######
+
     model.load_state_dict(torch.load(os.path.join(PATH, 'best_model.pt')))
     model.eval()
-
-    with torch.set_grad_enabled(False):
-        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-                                                device=DEVICE)
-        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-                                                device=DEVICE)
-        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-                                                device=DEVICE)
-
-        s = 'MAE/RMSE: | Best Train: %.2f/%.2f | Best Valid: %.2f/%.2f | Best Test: %.2f/%.2f' % (
-            train_mae, torch.sqrt(train_mse),
-            valid_mae, torch.sqrt(valid_mse),
-            test_mae, torch.sqrt(test_mse))
-        print(s)
-        with open(LOGFILE, 'a') as f:
-            f.write('%s\n' % s)
-
-    """
-    ########## SAVE PREDICTIONS ######
     all_pred = []
-    all_probas = []
     with torch.set_grad_enabled(False):
-        for batch_idx, (features, targets, levels) in enumerate(test_loader):
+        for batch_idx, (features, targets) in enumerate(test_loader):
             
             features = features.to(DEVICE)
             logits, probas = model(features)
-            all_probas.append(probas)
             predict_levels = probas > 0.5
             predicted_labels = torch.sum(predict_levels, dim=1)
             lst = [str(int(i)) for i in predicted_labels]
             all_pred.extend(lst)
 
-    torch.save(torch.cat(all_probas).to(torch.device('cpu')), TEST_ALLPROBAS)
     with open(TEST_PREDICTIONS, 'w') as f:
         all_pred = ','.join(all_pred)
         f.write(all_pred)
-    wandb.finish()
-

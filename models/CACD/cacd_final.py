@@ -18,6 +18,7 @@ import sys
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
+import torchvision.models
 from torchvision import transforms
 from PIL import Image
 
@@ -25,53 +26,30 @@ import wandb
 
 torch.backends.cudnn.deterministic = True
 if __name__ == '__main__':
-    TRAIN_CSV_PATH = '../datasets/cacd_train.csv'
-    VALID_CSV_PATH = '../datasets/cacd_valid.csv'
-    TEST_CSV_PATH = '../datasets/cacd_test.csv'
-    IMAGE_PATH = '../../../shared_datasets/CACD/centercropped/jpg/CACD2000'
+    TRAIN_CSV_PATH = 'datasets/cacd_train.csv'
+    VALID_CSV_PATH = 'datasets/cacd_valid.csv'
+    TEST_CSV_PATH = 'datasets/cacd_test.csv'
+    IMAGE_PATH = '../../../../Desktop/Datasets/CACD2000/'
 
     # Argparse helper
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cuda',
-                        type=int,
-                        default=0)
+    NUM_WORKERS = 4
+    CUDA = 0
+    SEED = 1
+    OUTPATH = 'cacd-ordinal'
 
-    parser.add_argument('--seed',
-                        type=int,
-                        default=1)
-
-    parser.add_argument('--numworkers',
-                        type=int,
-                        default=6)
-
-
-    parser.add_argument('--outpath',
-                        type=str,
-                        required=False,
-                        default='cacd-coral-resnet18')
-
-    parser.add_argument('--imp_weight',
-                        type=int,
-                        default=0)
-
-    args = parser.parse_args()
-
-    NUM_WORKERS = args.numworkers
-
-    if args.cuda >= 0:
-        DEVICE = torch.device("cuda:%d" % args.cuda)
+    if CUDA >= 0:
+        DEVICE = torch.device("cuda:%d" % CUDA)
     else:
         DEVICE = torch.device("cpu")
 
-    if args.seed == -1:
+    if SEED == -1:
         RANDOM_SEED = None
     else:
-        RANDOM_SEED = args.seed
+        RANDOM_SEED = SEED
 
-    IMP_WEIGHT = args.imp_weight
 
-    PATH = args.outpath
+    PATH = OUTPATH
     if not os.path.exists(PATH):
         os.mkdir(PATH)
     LOGFILE = os.path.join(PATH, 'training.log')
@@ -87,7 +65,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -104,23 +81,24 @@ if __name__ == '__main__':
 
     # Hyperparameters
     learning_rate = 0.0005
-    num_epochs = 35
+    num_epochs = 40
 
     wandb.init(
     # set the wandb project where this run will be logged
-        project="aging-ramon",
+        project="transfer-coral",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
-            "architecture": "coral",
+            "architecture": "coral-transfer",
             "dataset": "cacd",
             "epochs": num_epochs,
             }
     )
+
     # Architecture
     NUM_CLASSES = 49
-    BATCH_SIZE = 200
+    BATCH_SIZE = 256
     GRAYSCALE = False
 
     df = pd.read_csv(TRAIN_CSV_PATH, index_col=0)
@@ -129,29 +107,13 @@ if __name__ == '__main__':
     ages = torch.tensor(ages, dtype=torch.float)
 
 
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
 
 if __name__ == '__main__':
     # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
+
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
+
     imp = imp.to(DEVICE)
 
 
@@ -173,9 +135,11 @@ class CACDDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
+        NUM_CLASSES = 49
+
         img = Image.open(os.path.join(self.img_dir,
                                       self.img_names[index]))
-        NUM_CLASSES = 49
+
         if self.transform is not None:
             img = self.transform(img)
 
@@ -190,6 +154,8 @@ class CACDDataset(Dataset):
 
 if __name__ == '__main__':
     custom_transform = transforms.Compose([transforms.Resize((128, 128)),
+                                           transforms.RandomHorizontalFlip(p=0.5),
+                                           transforms.RandomRotation(degrees=10),
                                         transforms.RandomCrop((120, 120)),
                                         transforms.ToTensor()])
 
@@ -270,7 +236,6 @@ class BasicBlock(nn.Module):
         return out
 
 
-
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes, grayscale):
@@ -338,18 +303,33 @@ class ResNet(nn.Module):
         return logits, probas
 
 
-def resnet18(num_classes, grayscale):
+def resnet34(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
     model = ResNet(block=BasicBlock,
-                   layers=[2, 2, 2, 2],
+                   layers=[3, 4, 6, 3],
                    num_classes=num_classes,
                    grayscale=grayscale)
+    
+    pesos_nous = torchvision.models.resnet34(weights='IMAGENET1K_V1').state_dict()
+    pesos_actuals = model.state_dict()
+    pretrained_dict = {}
+
+    pretrained_dict = {k: v for k, v in pesos_nous.items() if k in pesos_actuals}
+    pretrained_dict["fc.weight"] = pesos_actuals["fc.weight"]
+    pesos_actuals.update(pretrained_dict)
+    model.load_state_dict(pesos_actuals)
     return model
 
 
 ###########################################
 # Initialize Cost, Model, and Optimizer
 ###########################################
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False
+
 
 def cost_fn(logits, levels, imp):
     val = (-torch.sum((F.logsigmoid(logits)*levels
@@ -360,7 +340,19 @@ def cost_fn(logits, levels, imp):
 if __name__ == '__main__':
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
-    model = resnet18(NUM_CLASSES, GRAYSCALE)
+    model = resnet34(NUM_CLASSES, GRAYSCALE)
+    set_parameter_requires_grad(model, False)
+    model.fc.weight.requires_grad = True
+    #model.fc.bias.requires_grad = True
+    #model.linear_1_bias.weight.requires_grad = True
+    #model.linear_1_bias.bias.requires_grad = True
+    model.to(DEVICE)
+    params_to_update = []
+    for name,param in model.named_parameters():
+        if param.requires_grad == True:
+            params_to_update.append(param)
+
+    optimizer = torch.optim.Adam(params_to_update, lr=learning_rate) 
 
     model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
@@ -423,43 +415,41 @@ if __name__ == '__main__':
 
         model.eval()
         with torch.set_grad_enabled(False):
-            valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-                                                    device=DEVICE)
             train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
             test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                     device=DEVICE)
             wandb.log({'epoch':epoch, 
                        'train_mae':train_mae, 'train_mse':train_mse,
-                       'test_mae':test_mae, 'test_mse':test_mse,
-                       'valid_mae':valid_mae, 'valid_mse':valid_mse})
+                       'test_mae':test_mae, 'test_mse':test_mse})
+        
+            valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                      device=DEVICE)
+            if valid_mae < best_mae:
+                best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
+                ######### SAVE MODEL #############
+                torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
+        
 
-        if valid_mae < best_mae:
-            best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
-            ########## SAVE MODEL #############
-            torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
-
-
-        s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
-            valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
-        print(s)
-        # with open(LOGFILE, 'a') as f:
-        #     f.write('%s\n' % s)
+        
+        print(train_mse,test_mse)
+        with open(LOGFILE, 'a') as f:
+            f.write('%s\n' % s)
 
         s = 'Time elapsed: %.2f min' % ((time.time() - start_time)/60)
         print(s)
-        # with open(LOGFILE, 'a') as f:
-        #     f.write('%s\n' % s)
+        with open(LOGFILE, 'a') as f:
+            f.write('%s\n' % s)
 
     model.eval()
     with torch.set_grad_enabled(False):  # save memory during inference
 
-        # train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-        #                                         device=DEVICE)
-        # valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                         device=DEVICE)
-        # test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-        #                                         device=DEVICE)
+        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
+                                                device=DEVICE)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                device=DEVICE)
+        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
+                                                device=DEVICE)
 
         s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
             train_mae, torch.sqrt(train_mse),
@@ -474,7 +464,7 @@ if __name__ == '__main__':
     with open(LOGFILE, 'a') as f:
         f.write('%s\n' % s)
 
-
+    
     ########## EVALUATE BEST MODEL ######
     model.load_state_dict(torch.load(os.path.join(PATH, 'best_model.pt')))
     model.eval()
@@ -495,7 +485,7 @@ if __name__ == '__main__':
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
-
+    
     ########## SAVE PREDICTIONS ######
     all_pred = []
     all_probas = []

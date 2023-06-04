@@ -32,11 +32,11 @@ if __name__ == '__main__':
     ##########################
 
     # Hyperparameters
-    learning_rate = 0.0005 #learning rate
-    num_epochs = 10 #num epochs
-    wandb.init( #inicialitzem wandb
+    learning_rate = 0.0005
+    num_epochs = 40
+    wandb.init(
     # set the wandb project where this run will be logged
-        project="provss",
+        project="cacd-ordinal",
         
         # track hyperparameters and run metadata
         config={
@@ -46,58 +46,42 @@ if __name__ == '__main__':
             "epochs": num_epochs,
             }
     )
-    NUM_CLASSES = 49 #num_classes
-    BATCH_SIZE = 128 #batcxh size
-    GRAYSCALE = False #si es en grayscale
+    
+    NUM_CLASSES = 49
+    BATCH_SIZE = 256
+    GRAYSCALE = False
     
 
-
-def task_importance_weights(label_array): #label array son totes les edats dels datasets
-    uniq = torch.unique(label_array) #valors únics d'edats
-    num_examples = label_array.size(0) #num total de exemples
-
-    m = torch.zeros(uniq.shape[0])#tensor amb 0 de la mida que els valors unics
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))): #per cada edat única (t)
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), #m_k es el maxim del tensor entre el num de edades major que t
-                                      num_examples - label_array[label_array > t].size(0)]))#i el num de edats menor o igual que t
-        
-        m[i] = torch.sqrt(m_k.float()) #posa la importancia de cada edtat sent l'arrel quadrada del m_k calcular abans
-
-    imp = m/torch.max(m) #normalitza dividint entre el màxim
-    
-    return imp #retorna la importància
 
 
 ###################
 # Dataset
 ###################
 
-class CACDDataset(Dataset): #lectura del dataset (classe)
+class CACDDataset(Dataset):
     """Custom Dataset for loading CACD face images"""
 
     def __init__(self,
-                 csv_path, img_dir, transform=None): 
+                 csv_path, img_dir, transform=None):
 
-        df = pd.read_csv(csv_path, index_col=0) #llegeix csv train, test o val
-        self.img_dir = img_dir #directori de les imatges
-        self.csv_path = csv_path #path del csv
-        self.img_names = df['file'].values #nom de les imatges
-        self.y = df['age'].values #edat
-        self.transform = transform #transformacions
+        df = pd.read_csv(csv_path, index_col=0)
+        self.img_dir = img_dir
+        self.csv_path = csv_path
+        self.img_names = df['file'].values
+        self.y = df['age'].values
+        self.transform = transform
 
-    def __getitem__(self, index): #rebre una imate al donar una posicio
+    def __getitem__(self, index):
         img = Image.open(os.path.join(self.img_dir,
-                                      self.img_names[index])) #obrim la imatge
+                                      self.img_names[index]))
 
         if self.transform is not None:
-            img = self.transform(img) #apliquem transformacions
+            img = self.transform(img)
 
-        label = self.y[index] #guardem edat com label
-        levels = [1]*label + [0]*(49 - 1 - label) #1 per fins la edat corresponent, 0 per les altres (hi han 49)
+        label = self.y[index]
+        levels = [1]*label + [0]*(49 - 1 - label)
+        levels = torch.tensor(levels, dtype=torch.float32)
 
-        levels = torch.tensor(levels, dtype=torch.float32) #a tensor
-        
         return img, label, levels
 
     def __len__(self):
@@ -106,7 +90,7 @@ class CACDDataset(Dataset): #lectura del dataset (classe)
 
 
 ##########################
-# MODEL (IMPLEMENTACIÓ MANUAL DE UNA RESNET?)
+# MODEL
 ##########################
 
 
@@ -168,7 +152,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(4)
-        self.fc = nn.Linear(512, (self.num_classes-1)*2)                    #!!!!
+        self.fc = nn.Linear(512, (self.num_classes-1)*2)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -209,17 +193,17 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         logits = self.fc(x)
-        logits = logits.view(-1, (self.num_classes-1), 2) #!!!!
-        probas = F.softmax(logits, dim=2)[:, :, 1] #!!!!
+        logits = logits.view(-1, (self.num_classes-1), 2)
+        probas = F.softmax(logits, dim=2)[:, :, 1]
         return logits, probas
 
 
-def resnet34(num_classes, grayscale): #el que crida al crear el model, crea una resnet (classe creada abans)
+def resnet34(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
-    model = ResNet(block=BasicBlock,  #utilitzem com a block el BasicBlock d'abans
-                   layers=[3, 4, 6, 3], 
-                   num_classes=num_classes, #numero de classes
-                   grayscale=grayscale) #si la imatge es grisos
+    model = ResNet(block=BasicBlock, 
+                   layers=[3, 4, 6, 3],
+                   num_classes=num_classes,
+                   grayscale=grayscale)
     return model
 
 ###########################################
@@ -233,48 +217,56 @@ def cost_fn(logits, levels, imp):
 
 
 def compute_mae_and_mse(model, data_loader, device):
-    mae, mse, num_examples = 0, 0, 0 
+    mae, mse, num_examples = 0, 0, 0
     for i, (features, targets, levels) in enumerate(data_loader):
 
         features = features.to(device)
         targets = targets.to(device)
 
-        logits, probas = model(features) #calcules loguts i probs
-        predict_levels = probas > 0.5 #predim per cada level si es prob a 0.5
-        predicted_labels = torch.sum(predict_levels, dim=1) #prediccio d'edat = suma de levels que passa com true (si es [True,False...]), seria 1
-        num_examples += targets.size(0) #va sument el num d'exemples
-        mae += torch.sum(torch.abs(predicted_labels - targets)) #suma del valor absoluto de la resta entre la prediccion y el target
-        mse += torch.sum((predicted_labels - targets)**2) #suma dde la resta entre la prediccion y el target al cuadrado
-    mae = mae.float() / num_examples #divide como normalizar
+        logits, probas = model(features)
+        predict_levels = probas > 0.5
+        predicted_labels = torch.sum(predict_levels, dim=1)
+        num_examples += targets.size(0)
+        mae += torch.sum(torch.abs(predicted_labels - targets))
+        mse += torch.sum((predicted_labels - targets)**2)
+    mae = mae.float() / num_examples
     mse = mse.float() / num_examples
     return mae, mse
 
 
 if __name__ == '__main__':
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_train.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_test.csv'
-    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/CACD2000/'
+    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    TRAIN_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_train.csv'
+    VALID_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_valid.csv'
+    TEST_CSV_PATH = '/home/alumne/Desktop/TREBALL/Starting point/datasets/cacd_test.csv'
+    IMAGE_PATH = '/home/alumne/Desktop/Datasets/CACD2000/'
 
-    NUM_WORKERS = 4 #num treballadors
-    CUDA = 0 #device
-    SEED = 1 #seed per repetir
-    IMP_WEIGHT = 0 #importancia weights
-    OUTPATH = 'cacd-ordinal' #path on surt
 
-    if CUDA >= 0: #escolleix device
+
+
+
+
+
+
+
+    
+    NUM_WORKERS = 4
+    CUDA = 0
+    SEED = 1
+    OUTPATH = 'cacd-ordinal'
+
+    if CUDA >= 0:
         DEVICE = torch.device("cuda:%d" % CUDA)
     else:
         DEVICE = torch.device("cpu")
 
-    if SEED == -1: #escull seed
+    if SEED == -1:
         RANDOM_SEED = None
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
-    PATH = OUTPATH #gaurdem la carpeta dels logs, les probs i els costos
+    PATH = OUTPATH
     if not os.path.exists(PATH):
         os.mkdir(PATH)
     LOGFILE = os.path.join(PATH, 'training.log')
@@ -290,7 +282,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -306,7 +297,7 @@ if __name__ == '__main__':
     # Architecture
     
 
-    df = pd.read_csv(TRAIN_CSV_PATH, index_col=0) #guardem les edats
+    df = pd.read_csv(TRAIN_CSV_PATH, index_col=0)
     ages = df['age'].values
     del df
     ages = torch.tensor(ages, dtype=torch.float)
@@ -315,28 +306,23 @@ if __name__ == '__main__':
 
 
 
-    # Data-specific scheme
-    if not IMP_WEIGHT: #no inicialitzem weights
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages) #conseguim el vector importància segons la edat
-        imp = imp[0:NUM_CLASSES-1]  #treiem el 0 del final
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
-    imp = imp.to(DEVICE) #enviem els weights al device
 
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
+
+    imp = imp.to(DEVICE)
 
 
 
 
     custom_transform = transforms.Compose([transforms.Resize((128, 128)),
                                            transforms.RandomCrop((120, 120)),
-                                          transforms.ToTensor()]) #resize i randomcrop com a transformacions
+                                           transforms.ToTensor()])
     
-    train_dataset = CACDDataset(csv_path=TRAIN_CSV_PATH, #creem el dataset
+    train_dataset = CACDDataset(csv_path=TRAIN_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform)
-   
+    
     
     custom_transform2 = transforms.Compose([transforms.Resize((128, 128)),
                                            transforms.CenterCrop((120, 120)),
@@ -350,7 +336,7 @@ if __name__ == '__main__':
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform2)
     
-    train_loader = DataLoader(dataset=train_dataset,  #ho pasem a dataloader per iterar
+    train_loader = DataLoader(dataset=train_dataset,
                               batch_size=BATCH_SIZE,
                               shuffle=True,
                               num_workers=NUM_WORKERS)
@@ -367,41 +353,45 @@ if __name__ == '__main__':
 
 
 
-    torch.manual_seed(RANDOM_SEED)  #seed
+    torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
-    model = resnet34(NUM_CLASSES, GRAYSCALE) #inicialitzem el model
+    model = resnet34(NUM_CLASSES, GRAYSCALE)
 
-    model.to(DEVICE) #enviem el model
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) #amb adam conseguim el optimizer
+    model.to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
+
+
+
 
 
     start_time = time.time()
 
     best_mae, best_rmse, best_epoch = 999, 999, -1
     costs=[]
-    for epoch in range(num_epochs): #para cada epoch
+    for epoch in range(num_epochs):
 
-        model.train() #posem el model per entrenar
+        model.train()
         for batch_idx, (features, targets, levels) in enumerate(train_loader):
+
             features = features.to(DEVICE)
             targets = targets
             targets = targets.to(DEVICE)
             levels = levels.to(DEVICE)
 
             # FORWARD AND BACK PROP
-            logits, probas = model(features) #treuen logits, probats i cost
+            logits, probas = model(features)
             cost = cost_fn(logits, levels, imp)
-            optimizer.zero_grad() #optimizar a 0 gradient
+            optimizer.zero_grad()
 
-            cost.backward() #backward pass
+            cost.backward()
 
             # UPDATE MODEL PARAMETERS
-            optimizer.step() #actualitzem parametres del optimizer
+            optimizer.step()
 
             # LOGGING
-            model.eval() #posem el model per treure dades
+            model.eval()
 
-            if not batch_idx % 50: #printejem i calculem cost
+            if not batch_idx % 50:
                 s = ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
                     % (epoch+1, num_epochs, batch_idx,
                         len(train_dataset)//BATCH_SIZE, cost))
@@ -422,12 +412,7 @@ if __name__ == '__main__':
                        'train_mae':train_mae, 'train_mse':train_mse,
                        'test_mae':test_mae, 'test_mse':test_mse})
             
-        """
-        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-                                                device=DEVICE)
-        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-                                                device=DEVICE)
-        
+
         valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
                                                   device=DEVICE)
         if valid_mae < best_mae:
@@ -435,9 +420,10 @@ if __name__ == '__main__':
             ########## SAVE MODEL #############
             torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
 
-        """
 
-        print(train_mse,test_mse)
+        s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
+            valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
+        print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
@@ -469,7 +455,7 @@ if __name__ == '__main__':
     with open(LOGFILE, 'a') as f:
         f.write('%s\n' % s)
 
-    """
+
     ########## EVALUATE BEST MODEL ######
     model.load_state_dict(torch.load(os.path.join(PATH, 'best_model.pt')))
     model.eval()
@@ -489,7 +475,7 @@ if __name__ == '__main__':
         print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
-    """
+
 
     ########## SAVE PREDICTIONS ######
     all_pred = []

@@ -24,80 +24,9 @@ from PIL import Image
 import wandb
 
 torch.backends.cudnn.deterministic = True
+
+
 if __name__ == '__main__':
-    TRAIN_CSV_PATH = '../datasets/cacd_train.csv'
-    VALID_CSV_PATH = '../datasets/cacd_valid.csv'
-    TEST_CSV_PATH = '../datasets/cacd_test.csv'
-    IMAGE_PATH = '../../../shared_datasets/CACD/centercropped/jpg/CACD2000'
-
-    # Argparse helper
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cuda',
-                        type=int,
-                        default=0)
-
-    parser.add_argument('--seed',
-                        type=int,
-                        default=1)
-
-    parser.add_argument('--numworkers',
-                        type=int,
-                        default=6)
-
-
-    parser.add_argument('--outpath',
-                        type=str,
-                        required=False,
-                        default='caca')
-
-    parser.add_argument('--imp_weight',
-                        type=int,
-                        default=0)
-
-    args = parser.parse_args()
-
-    NUM_WORKERS = args.numworkers
-
-    if args.cuda >= 0:
-        DEVICE = torch.device("cuda:%d" % args.cuda)
-    else:
-        DEVICE = torch.device("cpu")
-
-    if args.seed == -1:
-        RANDOM_SEED = None
-    else:
-        RANDOM_SEED = args.seed
-
-    IMP_WEIGHT = args.imp_weight
-
-    PATH = args.outpath
-    if not os.path.exists(PATH):
-        os.mkdir(PATH)
-    LOGFILE = os.path.join(PATH, 'training.log')
-    TEST_PREDICTIONS = os.path.join(PATH, 'test_predictions.log')
-    TEST_ALLPROBAS = os.path.join(PATH, 'test_allprobas.tensor')
-    COSTES = os.path.join(PATH, 'costs.log')
-
-    # Logging
-
-    header = []
-
-    header.append('PyTorch Version: %s' % torch.__version__)
-    header.append('CUDA device available: %s' % torch.cuda.is_available())
-    header.append('Using CUDA device: %s' % DEVICE)
-    header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
-    header.append('Output Path: %s' % PATH)
-    header.append('Script: %s' % sys.argv[0])
-
-    with open(LOGFILE, 'w') as f:
-        for entry in header:
-            print(entry)
-            f.write('%s\n' % entry)
-            f.flush()
-
-
     ##########################
     # SETTINGS
     ##########################
@@ -105,125 +34,58 @@ if __name__ == '__main__':
     # Hyperparameters
     learning_rate = 0.0005
     num_epochs = 50
-
     wandb.init(
     # set the wandb project where this run will be logged
-        project="aging-ramon",
+        project="afad-18",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
             "architecture": "coral",
-            "dataset": "cacd",
+            "dataset": "afad",
             "epochs": num_epochs,
             }
     )
-    # Architecture
-    NUM_CLASSES = 49
-    BATCH_SIZE = 100
+    
+    NUM_CLASSES = 26
+    BATCH_SIZE = 200
     GRAYSCALE = False
+    
 
-    df = pd.read_csv(TRAIN_CSV_PATH, index_col=0)
-    ages = df['age'].values
-    del df
-    ages = torch.tensor(ages, dtype=torch.float)
-
-
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
-
-if __name__ == '__main__':
-    # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
-    imp = imp.to(DEVICE)
 
 
 ###################
 # Dataset
 ###################
 
-class CACDDataset(Dataset):
-    """Custom Dataset for loading CACD face images"""
+class AFADDatasetAge(Dataset):
+    """Custom Dataset for loading AFAD face images"""
 
-    def __init__(self,
-                 csv_path, img_dir, transform=None):
+    def __init__(self, csv_path, img_dir, transform=None):
 
         df = pd.read_csv(csv_path, index_col=0)
         self.img_dir = img_dir
         self.csv_path = csv_path
-        self.img_names = df['file'].values
+        self.img_paths = df['path']
         self.y = df['age'].values
         self.transform = transform
 
     def __getitem__(self, index):
         img = Image.open(os.path.join(self.img_dir,
-                                      self.img_names[index]))
-        NUM_CLASSES = 49
+                                      self.img_paths[index]))
+
         if self.transform is not None:
             img = self.transform(img)
 
         label = self.y[index]
-        levels = [1]*label + [0]*(NUM_CLASSES - 1 - label)
+        # levels = [1]*label + [0]*(NUM_CLASSES - 1 - label)
+        levels = [1]*label + [0]*(26 - 1 - label)
         levels = torch.tensor(levels, dtype=torch.float32)
 
         return img, label, levels
 
     def __len__(self):
         return self.y.shape[0]
-
-if __name__ == '__main__':
-    custom_transform = transforms.Compose([transforms.Resize((128, 128)),
-                                        transforms.RandomCrop((120, 120)),
-                                        transforms.ToTensor()])
-
-    train_dataset = CACDDataset(csv_path=TRAIN_CSV_PATH,
-                                img_dir=IMAGE_PATH,
-                                transform=custom_transform)
-
-
-    custom_transform2 = transforms.Compose([transforms.Resize((128, 128)),
-                                        transforms.CenterCrop((120, 120)),
-                                        transforms.ToTensor()])
-
-    test_dataset = CACDDataset(csv_path=TEST_CSV_PATH,
-                            img_dir=IMAGE_PATH,
-                            transform=custom_transform2)
-
-    valid_dataset = CACDDataset(csv_path=VALID_CSV_PATH,
-                                img_dir=IMAGE_PATH,
-                                transform=custom_transform2)
-
-    train_loader = DataLoader(dataset=train_dataset,
-                            batch_size=BATCH_SIZE,
-                            shuffle=True,
-                            num_workers=NUM_WORKERS)
-
-    valid_loader = DataLoader(dataset=valid_dataset,
-                            batch_size=BATCH_SIZE,
-                            shuffle=False,
-                            num_workers=NUM_WORKERS)
-
-    test_loader = DataLoader(dataset=test_dataset,
-                            batch_size=BATCH_SIZE,
-                            shuffle=False,
-                            num_workers=NUM_WORKERS)
 
 
 
@@ -237,26 +99,17 @@ def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
-    """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
+class BasicBlock(nn.Module):
+    expansion = 1
 
-
-class Bottleneck(nn.Module):
-    expansion = 4
-
-    def __init__(self, inplanes, planes, stride=1, groups: int = 1, dilation: int = 1, base_width: int = 64, downsample=None):
-        super(Bottleneck, self).__init__()
-        width = int(planes * (base_width / 64.0)) * groups
-        # Both self.conv2 and self.downsample layers downsample the input when stride != 1
-        self.conv1 = conv1x1(inplanes, width)
-        self.bn1 = nn.BatchNorm2d(width)
-        self.conv2 = conv3x3(width, width, stride)
-        self.bn2 = nn.BatchNorm2d(width)
-        self.conv3 = conv1x1(width, planes * self.expansion)
-        self.bn3 = nn.BatchNorm2d(planes * self.expansion)
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -269,10 +122,6 @@ class Bottleneck(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -293,9 +142,9 @@ class ResNet(nn.Module):
         else:
             in_dim = 3
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_dim, self.inplanes, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(in_dim, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -303,7 +152,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(4)
-        self.fc = nn.Linear(2048, 1, bias=False)
+        self.fc = nn.Linear(512, 1, bias=False)
         self.linear_1_bias = nn.Parameter(torch.zeros(self.num_classes-1).float())
 
         for m in self.modules():
@@ -324,7 +173,7 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(inplanes=self.inplanes, planes=planes, stride=stride, downsample=downsample))
+        layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes))
@@ -350,10 +199,10 @@ class ResNet(nn.Module):
         return logits, probas
 
 
-def resnet50(num_classes, grayscale):
+def resnet18(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
-    model = ResNet(block=Bottleneck,
-                   layers=[3, 4, 6, 3],
+    model = ResNet(block=BasicBlock,
+                   layers=[2, 2, 2, 2],
                    num_classes=num_classes,
                    grayscale=grayscale)
     return model
@@ -369,13 +218,6 @@ def cost_fn(logits, levels, imp):
            dim=1))
     return torch.mean(val)
 
-if __name__ == '__main__':
-    torch.manual_seed(RANDOM_SEED)
-    torch.cuda.manual_seed(RANDOM_SEED)
-    model = resnet50(NUM_CLASSES, GRAYSCALE)
-
-    model.to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
 
 
 def compute_mae_and_mse(model, data_loader, device):
@@ -395,11 +237,128 @@ def compute_mae_and_mse(model, data_loader, device):
     mse = mse.float() / num_examples
     return mae, mse
 
+
 if __name__ == '__main__':
+    TRAIN_CSV_PATH = 'datasets/afad_train.csv'
+    VALID_CSV_PATH = 'datasets/afad_valid.csv'
+    TEST_CSV_PATH = 'datasets/afad_test.csv'
+    IMAGE_PATH = '../../../../Desktop/Datasets/AFAD-Full/'
+
+    NUM_WORKERS = 4
+    CUDA = 0
+    SEED = 1
+    OUTPATH = 'afad-resnet18'
+
+    if CUDA >= 0:
+        DEVICE = torch.device("cuda:%d" % CUDA)
+    else:
+        DEVICE = torch.device("cpu")
+
+    if SEED == -1:
+        RANDOM_SEED = None
+    else:
+        RANDOM_SEED = SEED
+
+
+    PATH = OUTPATH
+    if not os.path.exists(PATH):
+        os.mkdir(PATH)
+    LOGFILE = os.path.join(PATH, 'training.log')
+    TEST_PREDICTIONS = os.path.join(PATH, 'test_predictions.log')
+    TEST_ALLPROBAS = os.path.join(PATH, 'test_allprobas.tensor')
+
+    # Logging
+
+    header = []
+
+    header.append('PyTorch Version: %s' % torch.__version__)
+    header.append('CUDA device available: %s' % torch.cuda.is_available())
+    header.append('Using CUDA device: %s' % DEVICE)
+    header.append('Random Seed: %s' % RANDOM_SEED)
+    header.append('Output Path: %s' % PATH)
+    header.append('Script: %s' % sys.argv[0])
+
+    with open(LOGFILE, 'w') as f:
+        for entry in header:
+            print(entry)
+            f.write('%s\n' % entry)
+            f.flush()
+
+
+
+
+    # Architecture
+    
+
+    df = pd.read_csv(TRAIN_CSV_PATH, index_col=0)
+    ages = df['age'].values
+    del df
+    ages = torch.tensor(ages, dtype=torch.float)
+
+
+
+
+
+    # Data-specific scheme
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
+    imp = imp.to(DEVICE)
+
+
+
+
+    custom_transform = transforms.Compose([transforms.Resize((128, 128)),
+                                        transforms.RandomCrop((120, 120)),
+                                        transforms.ToTensor()])
+
+    train_dataset = AFADDatasetAge(csv_path=TRAIN_CSV_PATH,
+                                img_dir=IMAGE_PATH,
+                                transform=custom_transform)
+
+
+    custom_transform2 = transforms.Compose([transforms.Resize((128, 128)),
+                                            transforms.CenterCrop((120, 120)),
+                                            transforms.ToTensor()])
+
+    test_dataset = AFADDatasetAge(csv_path=TEST_CSV_PATH,
+                                img_dir=IMAGE_PATH,
+                                transform=custom_transform2)
+
+    valid_dataset = AFADDatasetAge(csv_path=VALID_CSV_PATH,
+                                img_dir=IMAGE_PATH,
+                                transform=custom_transform2)
+
+    train_loader = DataLoader(dataset=train_dataset,
+                            batch_size=BATCH_SIZE,
+                            shuffle=True,
+                            num_workers=NUM_WORKERS)
+
+    valid_loader = DataLoader(dataset=valid_dataset,
+                            batch_size=BATCH_SIZE,
+                            shuffle=False,
+                            num_workers=NUM_WORKERS)
+    test_loader = DataLoader(dataset=test_dataset,
+                            batch_size=BATCH_SIZE,
+                            shuffle=False,
+                            num_workers=NUM_WORKERS)
+
+
+
+
+    torch.manual_seed(RANDOM_SEED)
+    torch.cuda.manual_seed(RANDOM_SEED)
+    model = resnet18(NUM_CLASSES, GRAYSCALE)
+
+    model.to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
+
+
+
+
+
     start_time = time.time()
 
     best_mae, best_rmse, best_epoch = 999, 999, -1
-    costs = list()
     for epoch in range(num_epochs):
 
         model.train()
@@ -408,7 +367,7 @@ if __name__ == '__main__':
             features = features.to(DEVICE)
             targets = targets
             targets = targets.to(DEVICE)
-            levels = levels.to(DEVICE) 
+            levels = levels.to(DEVICE)
 
             # FORWARD AND BACK PROP
             logits, probas = model(features)
@@ -421,31 +380,30 @@ if __name__ == '__main__':
             optimizer.step()
 
             # LOGGING
-            
+            model.eval()
+
             if not batch_idx % 50:
-                model.eval()
                 s = ('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
                     % (epoch+1, num_epochs, batch_idx,
                         len(train_dataset)//BATCH_SIZE, cost))
                 print(s)
-                wandb.log({"cost":cost.item()})
-                costs.append(str(cost.item())) 
                 with open(LOGFILE, 'a') as f:
                     f.write('%s\n' % s)
 
+        # Wandb evaluation
         model.eval()
         with torch.set_grad_enabled(False):
-            valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-                                                    device=DEVICE)
             train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
             test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                     device=DEVICE)
             wandb.log({'epoch':epoch, 
                        'train_mae':train_mae, 'train_mse':train_mse,
-                       'test_mae':test_mae, 'test_mse':test_mse,
-                       'valid_mae':valid_mae, 'valid_mse':valid_mse})
+                       'test_mae':test_mae, 'test_mse':test_mse})
+            
 
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
         if valid_mae < best_mae:
             best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
             ########## SAVE MODEL #############
@@ -455,23 +413,23 @@ if __name__ == '__main__':
         s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
             valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
         print(s)
-        # with open(LOGFILE, 'a') as f:
-        #     f.write('%s\n' % s)
+        with open(LOGFILE, 'a') as f:
+            f.write('%s\n' % s)
 
         s = 'Time elapsed: %.2f min' % ((time.time() - start_time)/60)
         print(s)
-        # with open(LOGFILE, 'a') as f:
-        #     f.write('%s\n' % s)
+        with open(LOGFILE, 'a') as f:
+            f.write('%s\n' % s)
 
     model.eval()
     with torch.set_grad_enabled(False):  # save memory during inference
 
-        # train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-        #                                         device=DEVICE)
-        # valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                         device=DEVICE)
-        # test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-        #                                         device=DEVICE)
+        train_mae, train_mse = compute_mae_and_mse(model, train_loader,
+                                                device=DEVICE)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                device=DEVICE)
+        test_mae, test_mse = compute_mae_and_mse(model, test_loader,
+                                                device=DEVICE)
 
         s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
             train_mae, torch.sqrt(train_mse),
@@ -526,9 +484,5 @@ if __name__ == '__main__':
     with open(TEST_PREDICTIONS, 'w') as f:
         all_pred = ','.join(all_pred)
         f.write(all_pred)
-        
-    with open(COSTES, 'w') as f:
-        costs = ','.join(costs)
-        f.write(costs)
-    
     wandb.finish()
+

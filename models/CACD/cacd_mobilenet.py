@@ -1,3 +1,5 @@
+
+
 # coding: utf-8
 
 #############################################
@@ -36,124 +38,103 @@ if __name__ == '__main__':
     num_epochs = 35
     wandb.init(
     # set the wandb project where this run will be logged
-        project="squeezenet-afad",
+        project="cacd-mobilenet",
         
         # track hyperparameters and run metadata
         config={
             "learning_rate": learning_rate,
             "architecture": "coral",
-            "dataset": "afad",
+            "dataset": "cacd",
             "epochs": num_epochs,
             }
     )
     
-    NUM_CLASSES = 26
-    BATCH_SIZE = 256
+    NUM_CLASSES = 49
+    BATCH_SIZE = 128
     GRAYSCALE = False
     
 
-
-def task_importance_weights(label_array):
-    uniq = torch.unique(label_array)
-    num_examples = label_array.size(0)
-
-    m = torch.zeros(uniq.shape[0])
-
-    for i, t in enumerate(torch.arange(torch.min(uniq), torch.max(uniq))):
-        m_k = torch.max(torch.tensor([label_array[label_array > t].size(0), 
-                                      num_examples - label_array[label_array > t].size(0)]))
-        m[i] = torch.sqrt(m_k.float())
-
-    imp = m/torch.max(m)
-    return imp
 
 
 ###################
 # Dataset
 ###################
 
-class AFADDatasetAge(Dataset):
-    """Custom Dataset for loading AFAD face images"""
+class CACDDataset(Dataset): #lectura del dataset (classe)
+    """Custom Dataset for loading CACD face images"""
 
-    def __init__(self, csv_path, img_dir, transform=None):
+    def __init__(self,
+                 csv_path, img_dir, transform=None): 
 
-        df = pd.read_csv(csv_path, index_col=0)
-        self.img_dir = img_dir
-        self.csv_path = csv_path
-        self.img_paths = df['path']
-        self.y = df['age'].values
-        self.transform = transform
+        df = pd.read_csv(csv_path, index_col=0) #llegeix csv train, test o val
+        self.img_dir = img_dir #directori de les imatges
+        self.csv_path = csv_path #path del csv
+        self.img_names = df['file'].values #nom de les imatges
+        self.y = df['age'].values #edat
+        self.transform = transform #transformacions
 
-    def __getitem__(self, index):
+    def __getitem__(self, index): #rebre una imate al donar una posicio
         img = Image.open(os.path.join(self.img_dir,
-                                      self.img_paths[index]))
+                                      self.img_names[index])) #obrim la imatge
 
         if self.transform is not None:
-            img = self.transform(img)
+            img = self.transform(img) #apliquem transformacions
 
-        label = self.y[index]
-        # levels = [1]*label + [0]*(NUM_CLASSES - 1 - label)
-        levels = [1]*label + [0]*(26 - 1 - label)
-        levels = torch.tensor(levels, dtype=torch.float32)
+        label = self.y[index] #guardem edat com label
+        
+        levels = [1]*label + [0]*(49 - 1 - label) #1 per fins la edat corresponent, 0 per les altres (hi han 49)
 
+        levels = torch.tensor(levels, dtype=torch.float32) #a tensor
+        
         return img, label, levels
 
     def __len__(self):
         return self.y.shape[0]
-
-
 
 ##########################
 # MODEL
 ##########################
 
 
-class FireModule(nn.Module):
-    def __init__(self, in_channels, squeeze_channels, expand1x1_channels, expand3x3_channels):
-        super(FireModule, self).__init__()
-        self.squeeze = nn.Conv2d(in_channels, squeeze_channels, kernel_size=1)
-        self.relu = nn.ReLU(inplace=True)
-        self.expand1x1 = nn.Conv2d(squeeze_channels, expand1x1_channels, kernel_size=1)
-        self.expand3x3 = nn.Conv2d(squeeze_channels, expand3x3_channels, kernel_size=3, padding=1)
-
-    def forward(self, x):
-        x = self.squeeze(x)
-        x = self.relu(x)
-        out1x1 = self.expand1x1(x)
-        out3x3 = self.expand3x3(x)
-        out = torch.cat([out1x1, out3x3], dim=1)
-        return out
+def conv_dw(in_channels, out_channels, stride=1):
+    """Depthwise separable convolution"""
+    return nn.Sequential(
+        nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1, groups=in_channels, bias=False),
+        nn.BatchNorm2d(in_channels),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True)
+    )
 
 
-class SqueezeNet(nn.Module):
+class MobileNetCORAL(nn.Module):
     def __init__(self, num_classes):
-        super(SqueezeNet, self).__init__()
+        super(MobileNetCORAL, self).__init__()
+        self.num_classes=num_classes
         self.features = nn.Sequential(
-            nn.Conv2d(3, 96, kernel_size=7, stride=2),
+            nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            FireModule(96, 16, 64, 64),
-            FireModule(128, 16, 64, 64),
-            FireModule(128, 32, 128, 128),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            FireModule(256, 32, 128, 128),
-            FireModule(256, 48, 192, 192),
-            FireModule(384, 48, 192, 192),
-            FireModule(384, 64, 256, 256),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            FireModule(512, 64, 256, 256)
+            conv_dw(32, 64, stride=1),
+            conv_dw(64, 128, stride=2),
+            conv_dw(128, 128, stride=1),
+            conv_dw(128, 256, stride=2),
+            conv_dw(256, 256, stride=1),
+            conv_dw(256, 512, stride=2),
+            conv_dw(512, 512, stride=1),
+            conv_dw(512, 512, stride=1),
+            conv_dw(512, 512, stride=1),
+            conv_dw(512, 512, stride=1),
+            conv_dw(512, 1024, stride=2),
+            conv_dw(1024, 1024, stride=1),
+            nn.AdaptiveAvgPool2d(1)
         )
-        self.dropout = nn.Dropout(p=0.5)
-        self.conv10 = nn.Conv2d(512, 1, kernel_size=1)
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Linear(1, 1, bias=False)
-        self.linear_1_bias = nn.Parameter(torch.zeros(num_classes-1).float())
+        self.fc = nn.Linear(1024, 1, bias=False)
+        self.linear_1_bias = nn.Parameter(torch.zeros(self.num_classes-1).float())
     
     def forward(self, x):
         x = self.features(x)
-        x = self.dropout(x)
-        x = self.conv10(x)
-        x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         logits = self.fc(x)
         logits = logits + self.linear_1_bias
@@ -161,9 +142,9 @@ class SqueezeNet(nn.Module):
         return logits, probas
 
 
-def resnet34(num_classes, grayscale):
+def mobilenet(num_classes, grayscale):
     """Constructs a ResNet-34 model."""
-    model = SqueezeNet(num_classes)
+    model = MobileNetCORAL(num_classes)
     return model
 
 
@@ -199,16 +180,15 @@ def compute_mae_and_mse(model, data_loader, device):
 
 if __name__ == '__main__':
     print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_train.csv'
-    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_valid.csv'
-    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/afad_test.csv'
-    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/AFAD-Full/'
+    TRAIN_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_train.csv'
+    VALID_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_valid.csv'
+    TEST_CSV_PATH = 'C:/Users/Usuario/Downloads/xnap-project-ed_group_13-main/xnap-project-ed_group_13-main/Starting point/datasets/cacd_test.csv'
+    IMAGE_PATH = 'C:/Users/Usuario/Downloads/DATASETS DDNN/CACD2000/'
 
 
-    NUM_WORKERS = 4
+    NUM_WORKERS = 6
     CUDA = 0
     SEED = 1
-    IMP_WEIGHT = 0
     OUTPATH = 'afad-modelx'
 
     if CUDA >= 0:
@@ -221,7 +201,6 @@ if __name__ == '__main__':
     else:
         RANDOM_SEED = SEED
 
-    IMP_WEIGHT = IMP_WEIGHT
 
     PATH = OUTPATH
     if not os.path.exists(PATH):
@@ -238,7 +217,6 @@ if __name__ == '__main__':
     header.append('CUDA device available: %s' % torch.cuda.is_available())
     header.append('Using CUDA device: %s' % DEVICE)
     header.append('Random Seed: %s' % RANDOM_SEED)
-    header.append('Task Importance Weight: %s' % IMP_WEIGHT)
     header.append('Output Path: %s' % PATH)
     header.append('Script: %s' % sys.argv[0])
 
@@ -264,13 +242,9 @@ if __name__ == '__main__':
 
 
     # Data-specific scheme
-    if not IMP_WEIGHT:
-        imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
-    elif IMP_WEIGHT == 1:
-        imp = task_importance_weights(ages)
-        imp = imp[0:NUM_CLASSES-1]
-    else:
-        raise ValueError('Incorrect importance weight parameter.')
+
+    imp = torch.ones(NUM_CLASSES-1, dtype=torch.float)
+
     imp = imp.to(DEVICE)
 
 
@@ -280,7 +254,7 @@ if __name__ == '__main__':
                                         transforms.RandomCrop((120, 120)),
                                         transforms.ToTensor()])
 
-    train_dataset = AFADDatasetAge(csv_path=TRAIN_CSV_PATH,
+    train_dataset = CACDDataset(csv_path=TRAIN_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform)
 
@@ -289,11 +263,11 @@ if __name__ == '__main__':
                                             transforms.CenterCrop((120, 120)),
                                             transforms.ToTensor()])
 
-    test_dataset = AFADDatasetAge(csv_path=TEST_CSV_PATH,
+    test_dataset = CACDDataset(csv_path=TEST_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform2)
 
-    valid_dataset = AFADDatasetAge(csv_path=VALID_CSV_PATH,
+    valid_dataset = CACDDataset(csv_path=VALID_CSV_PATH,
                                 img_dir=IMAGE_PATH,
                                 transform=custom_transform2)
 
@@ -316,7 +290,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(RANDOM_SEED)
     torch.cuda.manual_seed(RANDOM_SEED)
-    model = resnet34(NUM_CLASSES, GRAYSCALE)
+    model = mobilenet(NUM_CLASSES, GRAYSCALE)
 
     model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) 
@@ -370,22 +344,20 @@ if __name__ == '__main__':
                        'train_mae':train_mae, 'train_mse':train_mse,
                        'test_mae':test_mae, 'test_mse':test_mse})
             print(train_mse,test_mse)
-            
-        #train_mae, train_mse = compute_mae_and_mse(model, train_loader,
-        #                                        device=DEVICE)
-        #test_mae, test_mse = compute_mae_and_mse(model, test_loader,
-        #                                       device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                          device=DEVICE)
-        #if valid_mae < best_mae:
-            #best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
-            ########## SAVE MODEL #############
-            #torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
+        
 
-
-        #s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
-        #    valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
-        #print(s)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                                  device=DEVICE)
+        if valid_mae < best_mae:
+            best_mae, best_rmse, best_epoch = valid_mae, torch.sqrt(valid_mse), epoch
+            ######### SAVE MODEL #############
+            torch.save(model.state_dict(), os.path.join(PATH, 'best_model.pt'))
+        
+        
+        s = 'MAE/RMSE: | Current Valid: %.2f/%.2f Ep. %d | Best Valid : %.2f/%.2f Ep. %d' % (
+            valid_mae, torch.sqrt(valid_mse), epoch, best_mae, best_rmse, best_epoch)
+        print(s)
+        
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
@@ -399,19 +371,19 @@ if __name__ == '__main__':
 
         train_mae, train_mse = compute_mae_and_mse(model, train_loader,
                                                 device=DEVICE)
-        #valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
-        #                                        device=DEVICE)
+        valid_mae, valid_mse = compute_mae_and_mse(model, valid_loader,
+                                               device=DEVICE)
         test_mae, test_mse = compute_mae_and_mse(model, test_loader,
                                                 device=DEVICE)
 
-        #s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
-            #train_mae, torch.sqrt(train_mse),
-            #valid_mae, torch.sqrt(valid_mse),
-            #test_mae, torch.sqrt(test_mse))
+        s = 'MAE/RMSE: | Train: %.2f/%.2f | Valid: %.2f/%.2f | Test: %.2f/%.2f' % (
+            train_mae, torch.sqrt(train_mse),
+            valid_mae, torch.sqrt(valid_mse),
+            test_mae, torch.sqrt(test_mse))
         print(s)
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
-    
+
     s = 'Total Training Time: %.2f min' % ((time.time() - start_time)/60)
     print(s)
     with open(LOGFILE, 'a') as f:
@@ -419,7 +391,7 @@ if __name__ == '__main__':
 
 
     ########## EVALUATE BEST MODEL ######
-    """
+
     model.load_state_dict(torch.load(os.path.join(PATH, 'best_model.pt')))
     model.eval()
 
@@ -439,7 +411,7 @@ if __name__ == '__main__':
         with open(LOGFILE, 'a') as f:
             f.write('%s\n' % s)
 
-    """
+    
     ########## SAVE PREDICTIONS ######
     all_pred = []
     all_probas = []
