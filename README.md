@@ -279,7 +279,7 @@ Com a millores que proposem per avançar aquest treball, una opció que creiem m
 ## Execució del codi per fer prediccions
 El codi probes_fotos.py és un codi que ens deixa fer prediccions d’edat amb diferents models. Després d’executar l’arxiu .py, hem de seguir aquests passos:
 - Primer escollirem el dataset amb el que s’haurà entrenat el model: AFAD o CACD.
-- Ara decidirem si volem utilitzar el model inicial o el final (en el cas de l’entrega, aquests dos primers apartats hauràn de ser CACD Final sempre, ja que per qüestions d’espai no podem penjar tots els models).
+- Ara decidirem si volem utilitzar el model inicial o el final.
 - Escollim la imatge entre les que hem guardat al GitHub per fer proves o amb una del propi disc:
 
 ![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/96b5a89d-7632-4481-b3f0-087a48053034)
@@ -288,6 +288,8 @@ El codi probes_fotos.py és un codi que ens deixa fer prediccions d’edat amb d
 - I ens retornarà el resultat:
 
 ![imagen](https://github.com/DCC-UAB/xnap-project-ed_group_13/assets/103357825/9fc30d09-9243-4f8a-a8fd-0c4535bd4339)
+
+En el cas de l’entrega al campus, al no poder penjar els pesos, no es podrà exectuar.
 
 ## Contributors
 
