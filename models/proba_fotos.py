@@ -78,7 +78,8 @@ fotos_str = str(''.join([f' - {el} ({i+1})\n' for i, el in enumerate(fotos)]))
 num = int(input(f"Escull l'imatge que vols probar\n{fotos_str} Escull:")) #\n -ramon(1)\n -bebe(2)\n -vell(3)\n -berni(4)\n"))
 
 if num==10:
-    path_altre=easygui.fileopenbox(title="Seleccionar imagen")
+    easygui.msgbox("Dona a 'OK' per escollir imatge", "Selecció d'imatge")
+    path_altre=easygui.fileopenbox(title="Selecció d'imatge")
     fotos_dir.append(path_altre)
 
 foto = Image.open(fotos_dir[num-1]) # escollir l'imatge de proba
