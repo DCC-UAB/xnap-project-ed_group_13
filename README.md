@@ -276,8 +276,12 @@ Alhora que buscavem millorar les prediccions, hem aprés també a entendre millo
 
 Com a millores que proposem per avançar aquest treball, una opció que creiem molt important i que no hem provat degut a falta d’hores en les màquines virtuals, és la de entrenar el model amb 200 epochs, com fa l’starting point, ja que creiem que el model arrivaria a tenir millors resultats (tot i que no desmesuradament millors).
 
-Contributors
+## Contributors
+
 Bernat Medina Perez - 1606505@uab.cat
+
 Adrià Martinez Vega - 1604392@uab.cat
+
 Sergio Trigueros Hevia - 1605983@uab.cat
+
 Xarxes Neuronals i Aprenentatge Profund Grau de Enginyeria de Dades, UAB, 2023
